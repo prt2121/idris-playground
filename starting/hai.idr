@@ -18,6 +18,11 @@ valToString x val = case x of
                         True => cast val
                         False => val
 
+valToStringWithHole : (x : Bool) -> StringOrIntType x -> String
+valToStringWithHole x val = case x of
+                        True => ?xTrueType -- holes
+                        False => ?xFalseType -- ctrl + alt + t
+
 -- idris hai.idr
 -- hai> valToString False "yaay"
 -- "yaay" : String
