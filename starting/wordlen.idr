@@ -1,6 +1,11 @@
 module wordlen
 
 import Prelude
+import Data.Vect
+
+word_lengths' : Vect k String -> Vect k Nat
+word_lengths' [] = [] -- Ctrl-Alt-S = search for a valid expression which satisfies that type
+word_lengths' (x :: xs) = Strings.length x :: word_lengths' xs
 
 -- Interactive Editing in Atom
 word_lengths : List String -> List Nat
