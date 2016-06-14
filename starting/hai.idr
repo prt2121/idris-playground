@@ -1,5 +1,20 @@
 module Main
 
+id' : t -> t
+id' x = x
+
+-- type Dependent version of id
+-- taking an explicit type as its first argument
+the' : (t : Type) -> t -> t
+the' t x = x
+
+-- *hai> the' (Int)
+-- the' Int : Int -> Int
+-- *hai> the' (Int) 1
+-- 1 : Int
+-- *hai> id' 1
+-- 1 : Integer
+
 main : IO ()
 main = putStrLn "Oh, hai"
 
