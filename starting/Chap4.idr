@@ -20,3 +20,7 @@ listToTree (x :: xs) = insert x $ listToTree xs
 
 -- *starting/Chap4> listToTree ['p', 'r', 'a', 't']
 -- Node (Node Empty 'a' (Node (Node Empty 'p' Empty) 'r' Empty)) 't' Empty : BSTree Char
+
+treeToList : BSTree a -> List a
+treeToList Empty = []
+treeToList (Node left val right) = treeToList left ++ [val] ++ treeToList right
