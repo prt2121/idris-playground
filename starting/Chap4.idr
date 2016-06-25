@@ -1,4 +1,27 @@
 -- 4.1.5 Exercises
+
+-- integer arithmetic expression
+data Exp = Single Int
+         | Add Exp Exp
+         | Sub Exp Exp
+         | Mul Exp Exp
+
+-- more flexible syntax
+-- data Exp : Type where
+--      Single : Int -> Exp
+--      Add : Exp -> Exp -> Exp
+--      Sub : Exp -> Exp -> Exp
+--      Mul : Exp -> Exp -> Exp
+
+eval : Exp -> Int
+eval (Single x) = x
+eval (Add x y) = eval x + eval y
+eval (Sub x y) = eval x - eval y
+eval (Mul x y) = eval x * eval y
+
+-- *Chap4> eval (Add (Single 1) (Single 2))
+-- 3 : Int
+
 data BSTree : Type -> Type where
       Empty : Ord e => BSTree e
       Node  : Ord e => (left : BSTree e) -> (val : e) -> (right : BSTree e) -> BSTree e
