@@ -2,6 +2,15 @@ module MyVect
 
 import Data.Vect
 
+-- The take function, on List, has type:
+take' : Nat -> List a -> List a
+take' Z [] = []
+take' (S k) (x :: xs) = x :: take' k xs
+
+take'' : (n : Nat) -> Vect (n + m) a -> Vect n a
+take'' Z _ = []
+take'' (S k) (x :: xs) = x :: take'' k xs
+
 append : Vect n elem -> Vect m elem -> Vect (n + m) elem
 append [] ys = ys
 append (x :: xs) ys = x :: append xs ys
