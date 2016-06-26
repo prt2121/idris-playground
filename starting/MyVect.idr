@@ -17,3 +17,11 @@ index'' (FS x) (y :: xs) = index'' x xs
 
 -- *MyVect> MyVect.index'' 3 [1,2,3,4,5]
 -- 4 : Integer
+
+tryIndex : Integer -> Vect n a -> Maybe a
+tryIndex {n} x xs = case integerToFin x n of
+                        Nothing => Nothing
+                        (Just x) => Just (index x xs)
+
+-- *MyVect> MyVect.tryIndex 3 [1,2,3,4,5]
+-- Just 4 : Maybe Integer
