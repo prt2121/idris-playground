@@ -20,5 +20,13 @@ addToStore (MkData size items) y =
                 addToData [] = [y]
                 addToData (x :: xs) = x :: addToData xs
 
+sumInputs : Integer -> String -> Maybe (String, Integer)
+sumInputs t input =
+  let val = cast input in
+            if val < 0
+            then Nothing
+            else let newVal = t + val in Just ("Subtotal: " ++ show newVal ++ "\n", newVal)
+
 main : IO ()
-main = ?main_rhs
+main = replWith 0 "Value: " sumInputs
+-- replWith : a -> String -> (a -> String -> Maybe (String, a)) -> IO ()
