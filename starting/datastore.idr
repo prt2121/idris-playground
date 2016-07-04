@@ -10,8 +10,21 @@ data DataStore : Type where
 size : DataStore -> Nat
 size (MkData size items) = size
 
-items : (store : DataStore) -> Vect (size store) String
-items (MkData size items) = items
+getItems : (store : DataStore) -> Vect (size store) String
+getItems (MkData size items) = items
+
+-- Hint: Use Strings.isInfixOf
+filterStr : String -> Vect n String -> (p ** Vect p String)
+filterStr s xs = filter (\str => s `isInfixOf` str) xs
+
+filterStr' : String -> List String -> List String
+filterStr' s xs = filter (\str => s `isInfixOf` str) xs
+
+search : DataStore -> String -> Maybe (String, DataStore)
+search (MkData Z items) str = Nothing
+search store@(MkData (S k) items) str = Just (unwords (filterStr' str (toList items)) ++ "\n", store)
+
+-- Just (unwords (toList (filterStr str items)), store)
 
 addToStore : DataStore -> String -> DataStore
 addToStore (MkData size items) y =
@@ -29,6 +42,7 @@ sumInputs t input =
 
 data Command = Add String
              | Get Integer
+             | Search String
              | Size
              | Quit
 
@@ -37,6 +51,7 @@ parseCommand "add" str = Just (Add str)
 parseCommand "get" val = case all isDigit (unpack val) of
                             False => Nothing
                             True => Just (Get (cast val))
+parseCommand "search" str = Just (Search str)
 parseCommand "size" "" = Just Size
 parseCommand "quit" "" = Just Quit
 parseCommand _ _ = Nothing
@@ -46,7 +61,7 @@ parse input = case span (/= ' ') input of
                    (cmd, args) => parseCommand cmd $ ltrim args -- remove leading spaces with the ltrim
 
 getEntry : (pos : Integer) -> (store : DataStore) -> Maybe (String, DataStore)
-getEntry pos store = let store_items = items store in
+getEntry pos store = let store_items = getItems store in
                              case integerToFin pos (size store) of
                                   Nothing => Just ("Out of range\n", store)
                                   Just id => Just (index id store_items ++ "\n", store)
@@ -58,6 +73,7 @@ processInput store inp
                     Just (Add item) => Just ("ID " ++ show (size store) ++ "\n", addToStore store item)
                     Just (Get pos) => getEntry pos store
                     Just Size => Just (show (size store) ++ "\n", store)
+                    Just (Search str) => search store str
                     Just Quit => Nothing
 
 main : IO ()
@@ -81,3 +97,14 @@ main = replWith (MkData _ []) "Command: " processInput
 -- main : IO ()
 -- main = replWith 0 "Value: " sumInputs
 -- replWith : a -> String -> (a -> String -> Maybe (String, a)) -> IO ()
+
+-- *datastore> :exec
+-- Command: add heyPrat
+-- ID 0
+-- Command: add hello
+-- ID 1
+-- Command: search ell
+-- hello
+-- Command: search he
+-- heyPrat hello
+-- Command: quit
