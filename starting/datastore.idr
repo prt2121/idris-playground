@@ -29,6 +29,7 @@ sumInputs t input =
 
 data Command = Add String
              | Get Integer
+             | Size
              | Quit
 
 parseCommand : (cmd : String) -> (args : String) -> Maybe Command
@@ -36,6 +37,7 @@ parseCommand "add" str = Just (Add str)
 parseCommand "get" val = case all isDigit (unpack val) of
                             False => Nothing
                             True => Just (Get (cast val))
+parseCommand "size" "" = Just Size
 parseCommand "quit" "" = Just Quit
 parseCommand _ _ = Nothing
 
@@ -55,6 +57,7 @@ processInput store inp
                     Nothing => Just ("Invalid command\n", store)
                     Just (Add item) => Just ("ID " ++ show (size store) ++ "\n", addToStore store item)
                     Just (Get pos) => getEntry pos store
+                    Just Size => Just (show (size store) ++ "\n", store)
                     Just Quit => Nothing
 
 main : IO ()
