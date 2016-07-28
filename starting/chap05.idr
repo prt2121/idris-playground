@@ -22,6 +22,30 @@ lenghtOfLonger' = getLine >>=
                                 \line2 => let l2 = length line2 in
                                           putStrLn $ show $ if l1 > l2 then l1 else l2
 
+readNumber : IO (Maybe Nat)
+readNumber = do
+  input <- getLine
+  if all isDigit $ unpack input
+    then pure $ Just $ cast input
+    else pure Nothing
+
+-- 5.2.4 Exercises
+-- Write a function which implements a simple "guess the number" game.
+guess : (target : Nat) -> IO ()
+guess target = do
+                  putStrLn "your guess : "
+                  Just ok <- readNumber | Nothing => do
+                                                      putStrLn "number please"
+                                                      guess target
+                  case compare ok target of
+                    LT => do
+                            putStrLn "too low"
+                            guess target
+                    GT => do
+                            putStrLn "too high"
+                            guess target
+                    EQ => putStrLn "bingo!"
+
 -- *chap05> :exec lenghtOfLonger'
 -- long
 -- longer
