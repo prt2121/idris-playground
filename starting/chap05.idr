@@ -1,5 +1,12 @@
 module Chap05
 
+import System
+import Effects
+import Effect.Random
+import Effect.Exception
+import Effect.StdIO
+import Data.Vect
+
 printLength : IO ()
 printLength = getLine >>= \line => let len = length line in
                                    putStrLn $ show len
@@ -45,6 +52,29 @@ guess target = do
                             putStrLn "too high"
                             guess target
                     EQ => putStrLn "bingo!"
+
+-- time : IO Integer
+-- -p effects
+random : Eff Integer [RND]
+random = rndInt 1 100
+
+read_vect : IO (len ** Vect len String)
+read_vect = do l <- getLine
+               if l == ""
+                  then pure (_ ** [])
+                  else do (_ ** ls) <- read_vect
+                          pure (_ ** l :: ls)
+
+-- *chap05> :exec read_vect >>= printLn
+-- hi
+-- howdy
+--
+-- (2 ** ["hi", "howdy"])
+
+-- main : IO ()
+-- main = do
+--         r <- random
+--         putStrLn r
 
 -- *chap05> :exec lenghtOfLonger'
 -- long
