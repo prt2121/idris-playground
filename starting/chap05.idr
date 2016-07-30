@@ -81,14 +81,15 @@ readToBlank = do l <- getLine
 -- ["first", "second"]
 
 -- openFile	 : 	(f : String) -> (m : Mode) -> IO File
+-- openFile	 : 	(f : String) -> (m : Mode) -> IO (Either FileError File)
 -- writeFile	 : 	(filepath : String) -> (contents : String) -> IO (Either FileError ())
 
 readAndSave : IO ()
 readAndSave =
   do ls <- readToBlank
      filename <- getLine
-     f <- openFile filename ReadWrite
-     Right result <- writeFile filename (show ls) | Left err => putStrLn (show err)
+     Right result <- writeFile filename (unwords ls)
+      | Left err => putStrLn (show err)
      pure result
 
 main : IO ()
