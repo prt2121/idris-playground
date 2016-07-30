@@ -1,10 +1,6 @@
 module Chap05
 
 import System
-import Effects
-import Effect.Random
-import Effect.Exception
-import Effect.StdIO
 import Data.Vect
 
 printLength : IO ()
@@ -53,17 +49,34 @@ guess target = do
                             guess target
                     EQ => putStrLn "bingo!"
 
--- time : IO Integer
--- -p effects
-random : Eff Integer [RND]
-random = rndInt 1 100
-
 read_vect : IO (len ** Vect len String)
 read_vect = do l <- getLine
                if l == ""
                   then pure (_ ** [])
                   else do (_ ** ls) <- read_vect
                           pure (_ ** l :: ls)
+
+zipInputs : IO ()
+zipInputs = do putStrLn "Enter first vector (blank line to end):"
+               (len1 ** vec1) <- read_vect
+               putStrLn "Enter second vector (blank line to end):"
+               (len2 ** vec2) <- read_vect
+               case exactLength len1 vec2 of
+                    Nothing => putStrLn "Vectors are different lengths"
+                    Just vec2' => printLn (zip vec1 vec2')
+
+-- *chap05> :exec zipInputs
+-- Enter first vector (blank line to end):
+-- 1
+-- 2
+-- 3
+--
+-- Enter second vector (blank line to end):
+-- a
+-- b
+-- c
+--
+-- [("1", "a"), ("2", "b"), ("3", "c")]
 
 -- *chap05> :exec read_vect >>= printLn
 -- hi
