@@ -65,6 +65,35 @@ zipInputs = do putStrLn "Enter first vector (blank line to end):"
                     Nothing => putStrLn "Vectors are different lengths"
                     Just vec2' => printLn (zip vec1 vec2')
 
+-- 5.3.5 Exercises
+-- openFile, closeFile, fEOF, fGetLine, writeFile
+readToBlank : IO (List String)
+readToBlank = do l <- getLine
+                 if l == ""
+                    then pure []
+                    else do ls <- readToBlank
+                            pure $ l :: ls
+
+-- *chap05> :exec readToBlank >>= printLn
+-- first
+-- second
+--
+-- ["first", "second"]
+
+-- openFile	 : 	(f : String) -> (m : Mode) -> IO File
+-- writeFile	 : 	(filepath : String) -> (contents : String) -> IO (Either FileError ())
+
+readAndSave : IO ()
+readAndSave =
+  do ls <- readToBlank
+     filename <- getLine
+     f <- openFile filename ReadWrite
+     Right result <- writeFile filename (show ls) | Left err => putStrLn (show err)
+     pure result
+
+main : IO ()
+main = readAndSave
+
 -- *chap05> :exec zipInputs
 -- Enter first vector (blank line to end):
 -- 1
