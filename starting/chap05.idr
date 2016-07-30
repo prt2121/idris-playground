@@ -1,4 +1,4 @@
-module Chap05
+module Main
 
 import System
 import Data.Vect
@@ -92,8 +92,33 @@ readAndSave =
       | Left err => putStrLn (show err)
      pure result
 
+ -- fEOF	 : 	File -> IO Bool
+ -- Check if a file handle has reached the end
+ -- fGetLine	 : 	(h : File) -> IO (Either FileError String)
+
+read : (h : File) -> IO (n ** Vect n String)
+read h =
+  do
+    eof <- fEOF h
+    if eof
+       then pure (_ ** [])
+       else
+         do
+           Right line <- fGetLine h
+           (_ ** lines) <- read h
+           pure (_ ** line :: lines)
+
+readVectFile : (filename : String) -> IO (n ** Vect n String)
+readVectFile filename =
+  do Right f <- openFile filename Read
+      | Left err => do
+                      pure (_ ** [])
+     read f
+
 main : IO ()
-main = readAndSave
+main = do
+        v <- readVectFile "test.txt"
+        putStrLn $ show v
 
 -- *chap05> :exec zipInputs
 -- Enter first vector (blank line to end):
