@@ -2,6 +2,12 @@ module chap06
 
 import Data.Vect
 
+N : (n : Nat) -> Type
+N n = (n : Nat ** Vect n Double)
+
+Matrix : (n : Nat) -> (m : Nat) -> Type
+Matrix n m = (m ** Vect m (N n))
+
 AdderType : (numargs : Nat) -> Type
 AdderType Z = Int
 AdderType (S k) = (next : Int) -> AdderType k
