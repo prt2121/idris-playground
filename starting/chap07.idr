@@ -11,6 +11,14 @@ Eq Shape where
   (==) (Circle d) (Circle d') = d == d'
   (==) _ _ = False
 
+area : Shape -> Double
+area (Triangle x y) = x * y / 2
+area (Rectangle x y) = x * y
+area (Circle x) = pi * x * x
+
+Ord Shape where
+    compare x y = compare (area x) (area y)
+
   -- *chap07> Circle 2 == Circle 2
   -- True : Bool
   -- *chap07> Circle 2 == Circle 3
