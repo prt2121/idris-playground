@@ -37,7 +37,7 @@ eval (Abs x) = abs (eval x)
 -- interface Show a where
 --  show : a -> String
 
--- 7.3.4 Exercises
+-- 7.3.4 Exercises 1
 Functor Expr where
     map func (Val x) = Val (func x)
     map func (Add x y) = Add (map func x) (map func y)
@@ -51,6 +51,25 @@ Functor Expr where
 -- *chap07> map show (the (Expr _) (1 + 2 * 3))
 -- Add (Val "1") (Mul (Val "2") (Val "3")) : Expr String
 
+-- 7.3.4 Exercises 2
+data Vect : Nat -> Type -> Type where
+     Nil : Vect Z a
+     (::) : a -> Vect k a -> Vect (S k) a
+
+-- Eq and Foldable
+Eq ty => Eq (Vect n ty) where
+    (==) [] [] = True
+    (==) (x :: xs) (x' :: xs') = (x == x') && (xs == xs')
+
+-- foldr : Foldable t => (elem -> acc -> acc) -> acc -> t elem -> acc
+-- foldl : Foldable t => (acc -> elem -> acc) -> acc -> t elem -> acc
+
+Foldable (Vect n) where
+    foldr func acc [] = acc
+    foldr func acc (x :: y) = func x (foldr func acc y)
+    foldl func acc [] = ?Foldable_rhs_1
+    foldl func acc (x :: y) = func (foldl func acc y) x
+
 -- 7.2.4 Exercises
 
 Show ty => Show (Expr ty) where
@@ -60,7 +79,6 @@ Show ty => Show (Expr ty) where
     show (Mul x y) = "(Mul " ++ show x ++ show y ++ ")"
     show (Div x y) = "(Div " ++ show x ++ show y ++ ")"
     show (Abs x) = "(Abs " ++ show x ++ ")"
-    -- showPrec d x = ?Show_rhs_2
 
 (Neg ty, Integral ty, Eq ty) => Eq (Expr ty) where
     (==) x y = (==) (eval x) (eval y)
