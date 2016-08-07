@@ -37,6 +37,20 @@ eval (Abs x) = abs (eval x)
 -- interface Show a where
 --  show : a -> String
 
+-- 7.3.4 Exercises
+Functor Expr where
+    map func (Val x) = Val (func x)
+    map func (Add x y) = Add (map func x) (map func y)
+    map func (Sub x y) = Sub (map func x) (map func y)
+    map func (Mul x y) = Mul (map func x) (map func y)
+    map func (Div x y) = Div (map func x) (map func y)
+    map func (Abs x) = Abs (map func x)
+
+-- *chap07> map (*2) (the (Expr _) (1 + 2 * 3))
+-- Add (Val 2) (Mul (Val 4) (Val 6)) : Expr Integer
+-- *chap07> map show (the (Expr _) (1 + 2 * 3))
+-- Add (Val "1") (Mul (Val "2") (Val "3")) : Expr String
+
 -- 7.2.4 Exercises
 
 Show ty => Show (Expr ty) where
