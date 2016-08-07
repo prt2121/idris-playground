@@ -74,3 +74,24 @@ occurrences item [] = 0
 occurrences item (x :: xs) = if item == x
                              then 1 + occurrences item xs
                              else occurrences item xs
+
+data Tree elem = Empty
+               | Node (Tree elem) elem (Tree elem)
+
+Functor Tree where
+  map f Empty = Empty
+  map f (Node l e r) = Node (map f l) (f e) (map f r)
+
+-- *chap07> map (*2) (Node (Node Empty 1 Empty) 5 (Node Empty 7 Empty))
+-- Node (Node Empty 2 Empty) 10 (Node Empty 14 Empty) : Tree Integer
+
+Foldable Tree where
+    foldr func acc Empty = acc
+    foldr func acc (Node l e r) = func e (foldr func (foldr func acc l) r)
+    foldl func acc Empty = acc
+    foldl func acc (Node l e r) = func (foldl func (foldl func acc r) l) e
+
+-- *chap07> foldl (+) 0 (Node (Node Empty 1 Empty) 5 (Node Empty 7 (Node Empty 2 (Node Empty 1 Empty))))
+-- 16 : Integer
+-- *chap07> foldr (+) 0 (Node (Node Empty 1 Empty) 5 (Node Empty 7 (Node Empty 2 (Node Empty 1 Empty))))
+-- 16 : Integer
