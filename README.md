@@ -1,8 +1,10 @@
 # [Idris](http://www.idris-lang.org/) playground
 Dependent Types
 
-### note:
+### resources:
 
 * [installation](https://github.com/idris-lang/Idris-dev/wiki/Installing-an-Idris-Development-version-in-a-sandbox)
 * [book](https://www.manning.com/books/type-driven-development-with-idris)
 * [atom plugin](https://atom.io/packages/language-idris)
+* [effects tutorial](http://docs.idris-lang.org/en/latest/effects/index.html)
+* [old tutorial](https://eb.host.cs.st-andrews.ac.uk/writings/idris-tutorial.pdf)
