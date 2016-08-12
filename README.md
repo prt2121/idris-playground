@@ -8,3 +8,13 @@ Dependent Types
 * [atom plugin](https://atom.io/packages/language-idris)
 * [effects tutorial](http://docs.idris-lang.org/en/latest/effects/index.html)
 * [old tutorial](https://eb.host.cs.st-andrews.ac.uk/writings/idris-tutorial.pdf)
+
+sandbox
+
+```
+mkdir idris
+cd idris
+cabal sandbox init
+cabal install idris
+.cabal-sandbox\bin\idris
+```
