@@ -17,9 +17,9 @@ data GRules : Effect where
                              then Hangman (Running (S g) w)
                              else Hangman (Running g (S w)))
      Won  : sig GRules () (Hangman (Running g 0))
-                                (Hangman NotRunning)
+                                $ Hangman NotRunning
      Lost : sig GRules () (Hangman (Running 0 g))
-                                (Hangman NotRunning)
+                                $ Hangman NotRunning
      NewWord : (w : String) ->
                sig GRules () (Hangman NotRunning) $ Hangman $ Running 6 $ length $ unpack w
      Get : sig GRules String $ Hangman h
