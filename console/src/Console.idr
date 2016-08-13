@@ -10,11 +10,14 @@ Names = List String
 name : Eff () [STATE Names, STDIO]
 name = do putStr "Name? "
           n <- getStr
-          before <- get
-          put $ n :: before
-          putStrLn $ show !get
-          putStrLn $ "hi, " ++ n
-          name
+          case n of
+            ""        => name
+            "bye!"    => putStrLn "bye"
+            otherwise => do names <- get
+                            put $ n :: names
+                            putStrLn $ show !get
+                            putStrLn $ "hi, " ++ n
+                            name
 
 main : IO ()
 main = run name
