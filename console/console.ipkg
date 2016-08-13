@@ -1,9 +1,8 @@
 package console
 
 sourcedir = src
-module = Console
-executable = console
-main = Console
-
+modules = Console
+executable = yourExecutable
+main = Main
 
 pkgs = effects
