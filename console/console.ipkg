@@ -1,8 +1,9 @@
 package console
 
-sourcedir = src
+sourcedir = .
 modules = Console
-executable = yourExecutable
+executable = whatever
 main = Main
 
-pkgs = effects
+pkgs = lightyear, effects
+# opts = "-p lightyear effects"
