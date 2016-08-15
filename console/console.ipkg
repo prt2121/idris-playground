@@ -1,0 +1,9 @@
+package console
+
+sourcedir = .
+modules = Console
+executable = whatever
+main = Main
+
+pkgs = lightyear, effects
+# opts = "-p lightyear effects"
