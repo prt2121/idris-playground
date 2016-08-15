@@ -71,10 +71,6 @@ mutual
            <|> parseString
            <|> parseNumber
            <|> parseQouted
-          --  <|> do char '('
-          --         x <- try parseList <|> parseDottedList
-          --         char ')'
-          --         return x
 
 readExpr : String -> String
 readExpr str = case parse parseExpr str of
