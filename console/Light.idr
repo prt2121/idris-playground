@@ -8,6 +8,7 @@ import Combi
 
 data Val = A String -- atom
          | L (List Val) -- list
+         | D (List Val) Val -- Dotted List
          | N Integer -- num
          | S String -- string
          | B Bool -- bool
@@ -47,10 +48,33 @@ positiveInt = do
 parseNumber : Parser Val
 parseNumber = return $ N !positiveInt
 
-parseExpr : Parser Val
-parseExpr = parseAtom
-         <|> parseString
-         <|> parseNumber
+mutual
+  parseQouted : Parser Val
+  parseQouted = do
+                  char '\''
+                  return $ L [(A "quote"), !parseExpr]
+
+  parseList : Parser Val
+  parseList = return $ L !(sepBy parseExpr Main.spaces)
+
+  parseDottedList : Parser Val
+  parseDottedList = do
+                      head <- endBy parseExpr Main.spaces
+                      tail <- do
+                                char '.'
+                                Main.spaces
+                                parseExpr
+                      return $ D head tail
+
+  parseExpr : Parser Val
+  parseExpr = parseAtom
+           <|> parseString
+           <|> parseNumber
+           <|> parseQouted
+          --  <|> do char '('
+          --         x <- try parseList <|> parseDottedList
+          --         char ')'
+          --         return x
 
 readExpr : String -> String
 readExpr str = case parse parseExpr str of
