@@ -13,6 +13,22 @@ data Val = A String -- atom
          | S String -- string
          | B Bool -- bool
 
+mutual
+  unwordsList : List Val -> String
+  unwordsList = unwords . map showVal
+
+  showVal : Val -> String
+  showVal (A x) = x
+  showVal (L xs) = "(" ++ unwordsList xs ++ ")"
+  showVal (D xs x) = "(" ++ unwordsList xs ++ " . " ++ showVal x ++ ")"
+  showVal (N x) = show x
+  showVal (S x) = "\"" ++ x ++ "\""
+  showVal (B True) = "#t"
+  showVal (B False) = "#f"
+
+Show Val where
+  show = showVal
+
 symbol : Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
 
@@ -83,7 +99,7 @@ mutual
 readExpr : String -> String
 readExpr str = case parse parseExpr str of
                    Left err => "No match: " ++ show err
-                   Right v  => "Found value"
+                   Right v  => "Found value: " ++ show v
 
 hex : Parser Int
 hex = do
