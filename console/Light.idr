@@ -66,11 +66,22 @@ mutual
                                 parseExpr
                       return $ D head tail
 
+  parseListOrDottedList : Parser Val
+  parseListOrDottedList = parseList <|> parseDottedList
+
   parseExpr : Parser Val
   parseExpr = parseAtom
            <|> parseString
            <|> parseNumber
            <|> parseQouted
+           <|> do char '('
+                  x <- parseList
+                  char ')'
+                  return x
+           <|> do char '('
+                  x <- parseDottedList
+                  char ')'
+                  return x
 
 readExpr : String -> String
 readExpr str = case parse parseExpr str of
