@@ -49,8 +49,8 @@ parseNumber : Parser Val
 parseNumber = return $ N !positiveInt
 
 mutual
-  parseQouted : Parser Val
-  parseQouted = do
+  parseQuoted : Parser Val
+  parseQuoted = do
                   char '\''
                   return $ L [(A "quote"), !parseExpr]
 
@@ -66,14 +66,11 @@ mutual
                                 parseExpr
                       return $ D head tail
 
-  parseListOrDottedList : Parser Val
-  parseListOrDottedList = parseList <|> parseDottedList
-
   parseExpr : Parser Val
   parseExpr = parseAtom
            <|> parseString
            <|> parseNumber
-           <|> parseQouted
+           <|> parseQuoted
            <|> do char '('
                   x <- parseList
                   char ')'
