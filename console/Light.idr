@@ -5,6 +5,7 @@ import public Lightyear.Char
 import public Lightyear.Strings
 
 import Combi
+import Data.String
 
 data Val = A String -- atom
          | L (List Val) -- list
@@ -103,6 +104,18 @@ readExpr str = case parse parseExpr str of
 
 -- reads : String -> Maybe Integer
 -- reads x = parseInteger (takeWhile isDigit (unpack x))
+-- foldr : (func : elem -> acc -> acc) -> (init : acc) -> (input : t elem) -> acc
+reads : String -> Maybe Integer
+reads s = parseInteger $ pack $ snd (foldl func (True, List.Nil) (unpack s))
+          where
+            func : (Bool, List Char) -> Char -> (Bool, List Char)
+            func y x = if fst y
+                       then
+                          case parseInteger (pack ((snd y) ++ [x])) of
+                            Just _  => (True, ((snd y) ++ [x]))
+                            Nothing => (False, (snd y))
+                        else
+                          (False, (snd y))
 
 unpackNumString : (n : String) -> Integer
 unpackNumString n = ?unpackNumString_rhs
