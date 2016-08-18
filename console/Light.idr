@@ -96,10 +96,48 @@ mutual
                   char ')'
                   return x
 
-readExpr : String -> String
+readExpr : String -> Val
 readExpr str = case parse parseExpr str of
-                   Left err => "No match: " ++ show err
-                   Right v  => "Found value: " ++ show v
+                   Left err => S $ "No match: " ++ show err
+                   Right v  => v
+
+-- reads : String -> Maybe Integer
+-- reads x = parseInteger (takeWhile isDigit (unpack x))
+
+unpackNumString : (n : String) -> Integer
+unpackNumString n = ?unpackNumString_rhs
+
+unpackNum : Val -> Integer
+unpackNum (A x)    = ?unpackNum_rhs_1
+unpackNum (L [n])  = unpackNum n
+unpackNum (D xs x) = ?unpackNum_rhs_3
+unpackNum (N n)    = n
+unpackNum (S n)    = unpackNumString n
+unpackNum (B x)    = ?unpackNum_rhs_6
+
+numericBinop : (Integer -> Integer -> Integer) -> List Val -> Val
+numericBinop op params = N $ foldl1 op $ map unpackNum params
+
+primitives : List (String, List Val -> Val)
+primitives = [("+", numericBinop (+)),
+              ("-", numericBinop (-)),
+              ("*", numericBinop (*)),
+              ("/", numericBinop div),
+              ("mod", numericBinop mod),
+              ("quotient", numericBinop divBigInt),
+              ("remainder", numericBinop modBigInt)]
+
+apply' : (func : String) -> (args : List Val) -> Val
+apply' func args = ?what (lookup func primitives)
+
+eval : Val -> Val
+eval (A x) = ?eval_rhs_1 -- todo
+eval (L [A "quote", val]) = val
+eval (L (A func :: args)) = apply' func $ map eval args
+eval (D xs x) = ?eval_rhs_3 -- todo
+eval val@(N x) = val
+eval val@(S x) = val
+eval val@(B x) = val
 
 hex : Parser Int
 hex = do
@@ -118,4 +156,4 @@ hexQuad = do
 main : IO ()
 main = do
        (_ :: expr :: _) <- getArgs
-       putStrLn (readExpr expr)
+       putStrLn $ show $ readExpr expr
