@@ -102,30 +102,12 @@ readExpr str = case parse parseExpr str of
                    Left err => S $ "No match: " ++ show err
                    Right v  => v
 
--- reads : String -> Maybe Integer
--- reads x = parseInteger (takeWhile isDigit (unpack x))
--- foldr : (func : elem -> acc -> acc) -> (init : acc) -> (input : t elem) -> acc
-reads : String -> Maybe Integer
-reads s = parseInteger $ pack $ snd (foldl func (True, List.Nil) (unpack s))
-          where
-            func : (Bool, List Char) -> Char -> (Bool, List Char)
-            func y x = if fst y
-                       then
-                          case parseInteger (pack ((snd y) ++ [x])) of
-                            Just _  => (True, ((snd y) ++ [x]))
-                            Nothing => (False, (snd y))
-                        else
-                          (False, (snd y))
-
-unpackNumString : (n : String) -> Integer
-unpackNumString n = ?unpackNumString_rhs
-
 unpackNum : Val -> Integer
 unpackNum (A x)    = ?unpackNum_rhs_1
 unpackNum (L [n])  = unpackNum n
 unpackNum (D xs x) = ?unpackNum_rhs_3
 unpackNum (N n)    = n
-unpackNum (S n)    = unpackNumString n
+unpackNum (S n)    = fromMaybe 0 $ parseInteger n -- todo
 unpackNum (B x)    = ?unpackNum_rhs_6
 
 numericBinop : (Integer -> Integer -> Integer) -> List Val -> Val
