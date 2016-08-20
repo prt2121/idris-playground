@@ -103,12 +103,13 @@ readExpr str = case parse parseExpr str of
                    Right v  => v
 
 unpackNum : Val -> Integer
-unpackNum (A x)    = ?unpackNum_rhs_1
+-- unpackNum (A x)    = ?unpackNum_rhs_1
 unpackNum (L [n])  = unpackNum n
-unpackNum (D xs x) = ?unpackNum_rhs_3
+-- unpackNum (D xs x) = ?unpackNum_rhs_3
 unpackNum (N n)    = n
 unpackNum (S n)    = fromMaybe 0 $ parseInteger n -- todo
-unpackNum (B x)    = ?unpackNum_rhs_6
+-- unpackNum (B x)    = ?unpackNum_rhs_6
+unpackNum _        = 0
 
 numericBinop : (Integer -> Integer -> Integer) -> List Val -> Val
 numericBinop op params = N $ foldl1 op $ map unpackNum params
@@ -123,7 +124,7 @@ primitives = [("+", numericBinop (+)),
               ("remainder", numericBinop modBigInt)]
 
 apply' : (func : String) -> (args : List Val) -> Val
-apply' func args = ?what (lookup func primitives)
+apply' func args = maybe (B False) (\op => op args) $ lookup func primitives
 
 eval : Val -> Val
 eval (A x) = ?eval_rhs_1 -- todo
@@ -151,4 +152,18 @@ hexQuad = do
 main : IO ()
 main = do
        (_ :: expr :: _) <- getArgs
-       putStrLn $ show $ readExpr expr
+       putStrLn $ show $ eval $ readExpr expr
+
+ -- ~/W/i/console git:master λ →  idris -p lightyear -p effects Light.idr -o tmp                                                                                        ✱ ◼
+ -- WARNING: There are incomplete holes:
+ --  [Main.eval_rhs_3,Main.eval_rhs_1]
+ --
+ -- Evaluation of any of these will crash at run time.
+ -- ~/W/i/console git:master λ →  ./tmp "(+ 2 2)"                                                                                                                       ✱ ◼
+ -- 4
+ -- ~/W/i/console git:master λ →  ./tmp "(+ 2 (-4 1))"                                                                                                                  ✱ ◼
+ -- 2
+ -- ~/W/i/console git:master λ →  ./tmp "(+ 2 (- 4 1))"                                                                                                                 ✱ ◼
+ -- 5
+ -- ~/W/i/console git:master λ →  ./tmp "(- (+ 4 6 3) 3 5 2)"                                                                                                           ✱ ◼
+ -- 3
