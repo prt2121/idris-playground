@@ -19,6 +19,13 @@ data Val = A String -- atom
 
 data Error = ParserE String
 
+ThrowsError : Type -> Type
+ThrowsError = Either Error
+
+Show Error where
+  show (ParserE e) = "Parse error " ++ e
+  show _           = "Error!!!"
+
 mutual
   unwordsList : List Val -> String
   unwordsList = unwords . map showVal
@@ -161,10 +168,9 @@ main : IO ()
 main = do
           (_ :: expr :: _) <- getArgs
           case the (Either Error Val) $ run $ evaluate expr of
-               Left (ParserE e) => putStrLn $ "err: " ++ e
-               Left _ => putStrLn $ "error!"
+               Left e => putStrLn $ show e
                Right v => putStrLn $ show v
-
+               --  Left _ => putStrLn $ "error!"
 --  ~/W/i/console git:master λ →  ./tmp "((((+ 1 1))"
 --  err: at 1:1 expected:
 --    letter
