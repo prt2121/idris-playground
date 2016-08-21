@@ -7,12 +7,19 @@ import public Lightyear.Strings
 import Combi
 import Data.String
 
+import Effects
+import Effect.Exception
+
 data Val = A String -- atom
          | L (List Val) -- list
          | D (List Val) Val -- Dotted List
          | N Integer -- num
          | S String -- string
          | B Bool -- bool
+
+data Error = NumArgs Integer (List Val)
+          | BadSpecialForm String Val
+          | ParserE String
 
 mutual
   unwordsList : List Val -> String
@@ -97,10 +104,10 @@ mutual
                   char ')'
                   return x
 
-readExpr : String -> Val
+readExpr : String -> Eff Val [EXCEPTION Error]
 readExpr str = case parse parseExpr str of
-                   Left err => S $ "No match: " ++ show err
-                   Right v  => v
+                   Left err => raise $ ParserE err
+                   Right v  => pure v
 
 unpackNum : Val -> Integer
 -- unpackNum (A x)    = ?unpackNum_rhs_1
@@ -149,21 +156,17 @@ hexQuad = do
   d <- hex
   pure $ a * 4096 + b * 256 + c * 16 + d
 
+evaluate : String -> Eff Val [EXCEPTION Error]
+evaluate expr = pure $ eval !(readExpr expr)
+
 main : IO ()
 main = do
-       (_ :: expr :: _) <- getArgs
-       putStrLn $ show $ eval $ readExpr expr
+          (_ :: expr :: _) <- getArgs
+          case run {m=Maybe} $ evaluate expr of
+               Nothing => putStrLn "Invalid input"
+               Just v => putStrLn $ show v
 
- -- ~/W/i/console git:master λ →  idris -p lightyear -p effects Light.idr -o tmp                                                                                        ✱ ◼
- -- WARNING: There are incomplete holes:
- --  [Main.eval_rhs_3,Main.eval_rhs_1]
- --
- -- Evaluation of any of these will crash at run time.
- -- ~/W/i/console git:master λ →  ./tmp "(+ 2 2)"                                                                                                                       ✱ ◼
- -- 4
- -- ~/W/i/console git:master λ →  ./tmp "(+ 2 (-4 1))"                                                                                                                  ✱ ◼
- -- 2
- -- ~/W/i/console git:master λ →  ./tmp "(+ 2 (- 4 1))"                                                                                                                 ✱ ◼
- -- 5
- -- ~/W/i/console git:master λ →  ./tmp "(- (+ 4 6 3) 3 5 2)"                                                                                                           ✱ ◼
- -- 3
+-- *Light> the (Either Error Val) $ run (evaluate "1")
+-- Right (N 1) : Either Error Val
+-- *Light> the (Either Error Val) $ run (evaluate "(+ 1 2)")
+-- Right (N 3) : Either Error Val
