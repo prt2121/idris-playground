@@ -24,10 +24,6 @@ data Error = ParserE String
 ThrowsError : Type -> Type
 ThrowsError = Either Error
 
-Show Error where
-  show (ParserE e) = "Parse error " ++ e
-  show _           = "Error!!!"
-
 mutual
   unwordsList : List Val -> String
   unwordsList = unwords . map showVal
@@ -43,6 +39,11 @@ mutual
 
 Show Val where
   show = showVal
+
+Show Error where
+  show (ParserE e)          = "Parse error " ++ e
+  show (BadSpecialForm s v) =  s ++ " : " ++ show v
+  show _                    = "Error!!!"
 
 symbol : Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
@@ -141,7 +142,7 @@ apply' : (func : String) -> (args : List Val) -> Val
 apply' func args = maybe (B False) (\op => op args) $ lookup func primitives
 
 eval : Val -> Eff Val [EXCEPTION Error]
-eval (A x) = ?eval_rhs_1 -- todo
+-- eval (A x) = ?eval_rhs_1 -- todo
 eval (L [A "quote", val]) = pure val
 eval (L (A func :: args)) = do
                               args' <- mapEff eval args
@@ -151,7 +152,7 @@ eval (L (A func :: args)) = do
                               mapEff eval []        = pure []
                               mapEff eval (x :: xs) = do x' <- eval x
                                                          pure $ x' :: !(mapEff eval xs)
-eval (D xs x) = ?eval_rhs_3 -- todo
+-- eval (D xs x) = ?eval_rhs_3 -- todo
 eval val@(N x) = pure $ val
 eval val@(S x) = pure $ val
 eval val@(B x) = pure $ val
@@ -181,3 +182,8 @@ main = do
           case the (Either Error Val) $ run $ evaluate expr of
                Left e => putStrLn $ show e
                Right v => putStrLn $ show v
+
+ -- ~/W/i/console git:master λ →  ./tmp "(1)"                                                                                                                                   ⬆ ✱ ◼
+ -- Unrecognized special form : (1)
+ -- ~/W/i/console git:master λ →  ./tmp "()"                                                                                                                                    ⬆ ✱ ◼
+ -- Unrecognized special form : ()
