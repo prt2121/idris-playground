@@ -18,6 +18,8 @@ data Val = A String -- atom
          | B Bool -- bool
 
 data Error = ParserE String
+           | BadSpecialForm String Val
+           | NotFunction String String
 
 ThrowsError : Type -> Type
 ThrowsError = Either Error
@@ -138,14 +140,23 @@ primitives = [("+", numericBinop (+)),
 apply' : (func : String) -> (args : List Val) -> Val
 apply' func args = maybe (B False) (\op => op args) $ lookup func primitives
 
-eval : Val -> Val
+eval : Val -> Eff Val [EXCEPTION Error]
 eval (A x) = ?eval_rhs_1 -- todo
-eval (L [A "quote", val]) = val
-eval (L (A func :: args)) = apply' func $ map eval args
+eval (L [A "quote", val]) = pure val
+eval (L (A func :: args)) = do
+                              args' <- mapEff eval args
+                              pure $ apply' func args'
+                            where
+                              mapEff : (eval : Val -> Eff Val [EXCEPTION Error]) -> List Val -> Eff (List Val) [EXCEPTION Error]
+                              mapEff eval []        = pure []
+                              mapEff eval (x :: xs) = do x' <- eval x
+                                                         pure $ x' :: !(mapEff eval xs)
 eval (D xs x) = ?eval_rhs_3 -- todo
-eval val@(N x) = val
-eval val@(S x) = val
-eval val@(B x) = val
+eval val@(N x) = pure $ val
+eval val@(S x) = pure $ val
+eval val@(B x) = pure $ val
+eval badForm = raise $ BadSpecialForm "Unrecognized special form" badForm
+
 
 hex : Parser Int
 hex = do
@@ -162,7 +173,7 @@ hexQuad = do
   pure $ a * 4096 + b * 256 + c * 16 + d
 
 evaluate : String -> Eff Val [EXCEPTION Error]
-evaluate expr = pure $ eval !(readExpr expr)
+evaluate expr = eval !(readExpr expr)
 
 main : IO ()
 main = do
@@ -170,7 +181,3 @@ main = do
           case the (Either Error Val) $ run $ evaluate expr of
                Left e => putStrLn $ show e
                Right v => putStrLn $ show v
-               --  Left _ => putStrLn $ "error!"
---  ~/W/i/console git:master λ →  ./tmp "((((+ 1 1))"
---  err: at 1:1 expected:
---    letter
