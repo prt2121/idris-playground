@@ -17,9 +17,7 @@ data Val = A String -- atom
          | S String -- string
          | B Bool -- bool
 
-data Error = NumArgs Integer (List Val)
-          | BadSpecialForm String Val
-          | ParserE String
+data Error = ParserE String
 
 mutual
   unwordsList : List Val -> String
@@ -162,11 +160,11 @@ evaluate expr = pure $ eval !(readExpr expr)
 main : IO ()
 main = do
           (_ :: expr :: _) <- getArgs
-          case run {m=Maybe} $ evaluate expr of
-               Nothing => putStrLn "Invalid input"
-               Just v => putStrLn $ show v
+          case the (Either Error Val) $ run $ evaluate expr of
+               Left (ParserE e) => putStrLn $ "err: " ++ e
+               Left _ => putStrLn $ "error!"
+               Right v => putStrLn $ show v
 
--- *Light> the (Either Error Val) $ run (evaluate "1")
--- Right (N 1) : Either Error Val
--- *Light> the (Either Error Val) $ run (evaluate "(+ 1 2)")
--- Right (N 3) : Either Error Val
+--  ~/W/i/console git:master λ →  ./tmp "((((+ 1 1))"
+--  err: at 1:1 expected:
+--    letter
