@@ -20,6 +20,7 @@ data Val = A String -- atom
 data Error = ParserE String
            | BadSpecialForm String Val
            | NotFunction String String
+           | TypeMismatch String Val
 
 ThrowsError : Type -> Type
 ThrowsError = Either Error
@@ -44,6 +45,7 @@ Show Error where
   show (ParserE e)          = "Parse error " ++ e
   show (BadSpecialForm s v) = s ++ " : " ++ show v
   show (NotFunction s f)    = s ++ " : " ++ show f
+  show (TypeMismatch e f)   = "Invalid type: expected " ++ e ++ ", found " ++ show f
   show _                    = "Error!!!"
 
 symbol : Parser Char
@@ -118,19 +120,26 @@ readExpr str = case parse parseExpr str of
                    Left err => raise $ ParserE err
                    Right v  => pure v
 
-unpackNum : Val -> Integer
+unpackNum : Val -> Eff Integer [EXCEPTION Error]
 -- unpackNum (A x)    = ?unpackNum_rhs_1
 unpackNum (L [n])  = unpackNum n
 -- unpackNum (D xs x) = ?unpackNum_rhs_3
-unpackNum (N n)    = n
-unpackNum (S n)    = fromMaybe 0 $ parseInteger n -- todo
+unpackNum (N n)    = pure n
+unpackNum (S n)    = maybe (raise $ TypeMismatch "number" $ S n)
+                           (\n => pure n)
+                           (parseInteger n) -- todo
 -- unpackNum (B x)    = ?unpackNum_rhs_6
-unpackNum _        = 0
+unpackNum notNum   = raise $ TypeMismatch "number" notNum
 
-numericBinop : (Integer -> Integer -> Integer) -> List Val -> Val
-numericBinop op params = N $ foldl1 op $ map unpackNum params
+-- numericBinop : (Integer -> Integer -> Integer) -> List Val -> Val
+-- numericBinop op params = N $ foldl1 op $ map unpackNum params
 
-primitives : List (String, List Val -> Val)
+numericBinop : (Integer -> Integer -> Integer) -> List Val -> Eff Val [EXCEPTION Error]
+numericBinop op params = do
+                            x <- ?wtf unpackNum params
+                            pure $ N $ foldl1 op x
+
+primitives : List (String, List Val -> Eff Val [EXCEPTION Error])
 primitives = [("+", numericBinop (+)),
               ("-", numericBinop (-)),
               ("*", numericBinop (*)),
@@ -139,13 +148,10 @@ primitives = [("+", numericBinop (+)),
               ("quotient", numericBinop divBigInt),
               ("remainder", numericBinop modBigInt)]
 
-apply' : (func : String) -> (args : List Val) -> Val
-apply' func args = maybe (B False) (\op => op args) $ lookup func primitives
-
 applyFunc : (func : String) -> (args : List Val) -> Eff Val [EXCEPTION Error]
 applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive function" func)
-                            (\op => pure $ op args)
-                            $ lookup func primitives
+                            (\op => op args)
+                            (lookup func primitives)
 
 eval : Val -> Eff Val [EXCEPTION Error]
 -- eval (A x) = ?eval_rhs_1 -- todo
