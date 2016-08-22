@@ -42,7 +42,8 @@ Show Val where
 
 Show Error where
   show (ParserE e)          = "Parse error " ++ e
-  show (BadSpecialForm s v) =  s ++ " : " ++ show v
+  show (BadSpecialForm s v) = s ++ " : " ++ show v
+  show (NotFunction s f)    = s ++ " : " ++ show f
   show _                    = "Error!!!"
 
 symbol : Parser Char
@@ -141,12 +142,17 @@ primitives = [("+", numericBinop (+)),
 apply' : (func : String) -> (args : List Val) -> Val
 apply' func args = maybe (B False) (\op => op args) $ lookup func primitives
 
+applyFunc : (func : String) -> (args : List Val) -> Eff Val [EXCEPTION Error]
+applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive function" func)
+                            (\op => pure $ op args)
+                            $ lookup func primitives
+
 eval : Val -> Eff Val [EXCEPTION Error]
 -- eval (A x) = ?eval_rhs_1 -- todo
 eval (L [A "quote", val]) = pure val
 eval (L (A func :: args)) = do
                               args' <- mapEff eval args
-                              pure $ apply' func args'
+                              applyFunc func args'
                             where
                               mapEff : (eval : Val -> Eff Val [EXCEPTION Error]) -> List Val -> Eff (List Val) [EXCEPTION Error]
                               mapEff eval []        = pure []
@@ -187,3 +193,5 @@ main = do
  -- Unrecognized special form : (1)
  -- ~/W/i/console git:master λ →  ./tmp "()"                                                                                                                                    ⬆ ✱ ◼
  -- Unrecognized special form : ()
+ --  ~/W/i/console git:master λ →  ./tmp "(% 5 2)"                                                                                                                               ⬆ ✱ ◼
+ -- Unrecognized primitive function : "%"
