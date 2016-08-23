@@ -131,13 +131,15 @@ unpackNum (S n)    = maybe (raise $ TypeMismatch "number" $ S n)
 -- unpackNum (B x)    = ?unpackNum_rhs_6
 unpackNum notNum   = raise $ TypeMismatch "number" notNum
 
--- numericBinop : (Integer -> Integer -> Integer) -> List Val -> Val
--- numericBinop op params = N $ foldl1 op $ map unpackNum params
-
 numericBinop : (Integer -> Integer -> Integer) -> List Val -> Eff Val [EXCEPTION Error]
 numericBinop op params = do
-                            x <- ?wtf unpackNum params
+                            x <- map' unpackNum params
                             pure $ N $ foldl1 op x
+                         where
+                            map' : (f : Val -> Eff Integer [EXCEPTION Error]) -> List Val -> Eff (List Integer) [EXCEPTION Error]
+                            map' f []        = pure []
+                            map' f (x :: xs) = do x' <- f x
+                                                  pure $ x' :: !(map' f xs)
 
 primitives : List (String, List Val -> Eff Val [EXCEPTION Error])
 primitives = [("+", numericBinop (+)),
@@ -149,9 +151,10 @@ primitives = [("+", numericBinop (+)),
               ("remainder", numericBinop modBigInt)]
 
 applyFunc : (func : String) -> (args : List Val) -> Eff Val [EXCEPTION Error]
+-- applyFunc func args = ?anotherResult
 applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive function" func)
                             (\op => op args)
-                            (lookup func primitives)
+                            (List.lookup func primitives)
 
 eval : Val -> Eff Val [EXCEPTION Error]
 -- eval (A x) = ?eval_rhs_1 -- todo
