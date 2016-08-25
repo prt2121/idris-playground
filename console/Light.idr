@@ -21,6 +21,7 @@ data Error = ParserE String
            | BadSpecialForm String Val
            | NotFunction String String
            | NumArgs Integer (List Val)
+           | TypeMismatch String Val
 
 ThrowsError : Type -> Type
 ThrowsError = Either Error
@@ -46,6 +47,7 @@ Show Error where
   show (BadSpecialForm s v) = s ++ " : " ++ show v
   show (NotFunction s f)    = s ++ " : " ++ show f
   show (NumArgs e f)        = "Expected " ++ show e ++ " args; found " ++ (show $ length f)
+  show (TypeMismatch e f)   = "Invalid type: expected " ++ e ++ ", found " ++ show f
   show _                    = "Error!!!"
 
 symbol : Parser Char
@@ -120,19 +122,19 @@ readExpr str = case parse parseExpr str of
                    Left err => raise $ ParserE err
                    Right v  => pure v
 
-unpackNum : Val -> Integer
+unpackNum : Val -> Either Error Integer
 -- unpackNum (A x)    = ?unpackNum_rhs_1
 unpackNum (L [n])  = unpackNum n
 -- unpackNum (D xs x) = ?unpackNum_rhs_3
-unpackNum (N n)    = n
-unpackNum (S n)    = fromMaybe 0 $ parseInteger n -- todo
+unpackNum (N n)    = Right $ n
+unpackNum (S n)    = maybeToEither (TypeMismatch "number" (S n)) $ parseInteger n -- todo
 -- unpackNum (B x)    = ?unpackNum_rhs_6
-unpackNum _        = 0
+unpackNum notNum   = Left $ TypeMismatch "number" notNum
 
-numericBinop : (Integer -> Integer -> Integer) -> Vect 2 Val -> Val
-numericBinop op params = N $ foldl1 op $ map unpackNum params
+numericBinop : (Integer -> Integer -> Integer) -> Vect 2 Val -> Either Error Val
+numericBinop op params = (liftA N) $ foldl1 (liftA2 op) $ map unpackNum params
 
-primitives : List (String, Vect 2 Val -> Val)
+primitives : List (String, Vect 2 Val -> Either Error Val)
 primitives = [("+", numericBinop (+)),
               ("-", numericBinop (-)),
               ("*", numericBinop (*)),
@@ -149,7 +151,9 @@ toVect2 _      = Nothing
 applyFunc : (func : String) -> (args : List Val) -> Eff Val [EXCEPTION Error]
 applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive function" func)
                             (\op => case toVect2 args of
-                                      Just v => pure $ op $ v
+                                      Just v => case op v of
+                                                  Left e => raise $ e
+                                                  Right val => pure val
                                       Nothing => raise $ NumArgs 2 args)
                             $ lookup func primitives
 
@@ -194,10 +198,3 @@ main = do
           case the (Either Error Val) $ run $ evaluate expr of
                Left e => putStrLn $ show e
                Right v => putStrLn $ show v
-
- -- ~/W/i/console git:master λ →  ./tmp "(1)"                                                                                                                                   ⬆ ✱ ◼
- -- Unrecognized special form : (1)
- -- ~/W/i/console git:master λ →  ./tmp "()"                                                                                                                                    ⬆ ✱ ◼
- -- Unrecognized special form : ()
- --  ~/W/i/console git:master λ →  ./tmp "(% 5 2)"                                                                                                                               ⬆ ✱ ◼
- -- Unrecognized primitive function : "%"
