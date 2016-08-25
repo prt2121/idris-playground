@@ -20,6 +20,7 @@ data Val = A String -- atom
 data Error = ParserE String
            | BadSpecialForm String Val
            | NotFunction String String
+           | NumArgs Integer (List Val)
 
 ThrowsError : Type -> Type
 ThrowsError = Either Error
@@ -44,6 +45,7 @@ Show Error where
   show (ParserE e)          = "Parse error " ++ e
   show (BadSpecialForm s v) = s ++ " : " ++ show v
   show (NotFunction s f)    = s ++ " : " ++ show f
+  show (NumArgs e f)        = "Expected " ++ show e ++ " args; found " ++ (show $ length f)
   show _                    = "Error!!!"
 
 symbol : Parser Char
@@ -127,10 +129,10 @@ unpackNum (S n)    = fromMaybe 0 $ parseInteger n -- todo
 -- unpackNum (B x)    = ?unpackNum_rhs_6
 unpackNum _        = 0
 
-numericBinop : (Integer -> Integer -> Integer) -> List Val -> Val
+numericBinop : (Integer -> Integer -> Integer) -> Vect 2 Val -> Val
 numericBinop op params = N $ foldl1 op $ map unpackNum params
 
-primitives : List (String, List Val -> Val)
+primitives : List (String, Vect 2 Val -> Val)
 primitives = [("+", numericBinop (+)),
               ("-", numericBinop (-)),
               ("*", numericBinop (*)),
@@ -139,12 +141,16 @@ primitives = [("+", numericBinop (+)),
               ("quotient", numericBinop divBigInt),
               ("remainder", numericBinop modBigInt)]
 
-apply' : (func : String) -> (args : List Val) -> Val
-apply' func args = maybe (B False) (\op => op args) $ lookup func primitives
+
+toVect2 : List Val -> Maybe (Vect 2 Val)
+toVect2 [x, y] = Just (fromList [x, y])
+toVect2 _      = Nothing
 
 applyFunc : (func : String) -> (args : List Val) -> Eff Val [EXCEPTION Error]
 applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive function" func)
-                            (\op => pure $ op args)
+                            (\op => case toVect2 args of
+                                      Just v => pure $ op $ v
+                                      Nothing => raise $ NumArgs 2 args)
                             $ lookup func primitives
 
 eval : Val -> Eff Val [EXCEPTION Error]
