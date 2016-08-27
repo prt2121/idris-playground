@@ -131,8 +131,42 @@ unpackNum (S n)    = maybeToEither (TypeMismatch "number" (S n)) $ parseInteger 
 -- unpackNum (B x)    = ?unpackNum_rhs_6
 unpackNum notNum   = Left $ TypeMismatch "number" notNum
 
+unpackStr : Val -> Either Error String
+unpackStr (S s)      = Right s
+unpackStr (N s)      = Right $ show s
+unpackStr (B s)      = Right $ show s
+unpackStr notString  = Left $ TypeMismatch "string" notString
+
+unpackBool : Val -> Either Error Bool
+unpackBool (B b) = Right b
+unpackBool notBool  = Left $ TypeMismatch "boolean" notBool
+
+boolBinop : (unpacker : Val -> Either Error a) -> (a -> a -> Bool) -> Vect 2 Val -> Either Error Val
+boolBinop unpacker op args = do left <- unpacker $ head args
+                                right <- unpacker $ last args
+                                pure $ B $ left `op` right
+
+numBoolBinop : (Integer -> Integer -> Bool) -> Vect 2 Val -> Either Error Val
+numBoolBinop  = boolBinop unpackNum
+
+strBoolBinop : (String -> String -> Bool) -> Vect 2 Val -> Either Error Val
+strBoolBinop  = boolBinop unpackStr
+
+boolBoolBinop : (Bool -> Bool -> Bool) -> Vect 2 Val -> Either Error Val
+boolBoolBinop = boolBinop unpackBool
+
 numericBinop : (Integer -> Integer -> Integer) -> Vect 2 Val -> Either Error Val
 numericBinop op params = (liftA N) $ foldl1 (liftA2 op) $ map unpackNum params
+
+-- non-lazy version of (&&)
+and : Bool -> Bool -> Bool
+and True x  = x
+and False _ = False
+
+-- non-lazy version of (||)
+or : Bool -> Bool -> Bool
+or False x = x
+or True _  = True
 
 primitives : List (String, Vect 2 Val -> Either Error Val)
 primitives = [("+", numericBinop (+)),
@@ -141,8 +175,20 @@ primitives = [("+", numericBinop (+)),
               ("/", numericBinop div),
               ("mod", numericBinop mod),
               ("quotient", numericBinop divBigInt),
-              ("remainder", numericBinop modBigInt)]
-
+              ("remainder", numericBinop modBigInt),
+              ("=", numBoolBinop (==)),
+              ("<", numBoolBinop (<)),
+              (">", numBoolBinop (>)),
+              ("/=", numBoolBinop (/=)),
+              (">=", numBoolBinop (>=)),
+              ("<=", numBoolBinop (<=)),
+              ("&&", boolBoolBinop and),
+              ("||", boolBoolBinop or),
+              ("string=?", strBoolBinop (==)),
+              ("string<?", strBoolBinop (<)),
+              ("string>?", strBoolBinop (>)),
+              ("string<=?", strBoolBinop (<=)),
+              ("string>=?", strBoolBinop (>=))]
 
 toVect2 : List Val -> Maybe (Vect 2 Val)
 toVect2 [x, y] = Just (fromList [x, y])
@@ -173,7 +219,6 @@ eval val@(N x) = pure $ val
 eval val@(S x) = pure $ val
 eval val@(B x) = pure $ val
 eval badForm = raise $ BadSpecialForm "Unrecognized special form" badForm
-
 
 hex : Parser Int
 hex = do
