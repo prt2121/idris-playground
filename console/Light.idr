@@ -1,4 +1,4 @@
-module Main
+module Light
 
 import public Lightyear
 import public Lightyear.Char
@@ -10,6 +10,7 @@ import Data.String
 import Effects
 import Effect.Exception
 
+export
 data Val = A String -- atom
          | L (List Val) -- list
          | D (List Val) Val -- Dotted List
@@ -17,6 +18,7 @@ data Val = A String -- atom
          | S String -- string
          | B Bool -- bool
 
+export
 data Error = ParserE String
            | BadSpecialForm String Val
            | NotFunction String String
@@ -30,6 +32,7 @@ mutual
   unwordsList : List Val -> String
   unwordsList = unwords . map showVal
 
+  export
   showVal : Val -> String
   showVal (A x) = x
   showVal (L xs) = "(" ++ unwordsList xs ++ ")"
@@ -39,9 +42,11 @@ mutual
   showVal (B True) = "#t"
   showVal (B False) = "#f"
 
+export
 Show Val where
   show = showVal
 
+export
 Show Error where
   show (ParserE e)          = "Parse error " ++ e
   show (BadSpecialForm s v) = s ++ " : " ++ show v
@@ -92,14 +97,14 @@ mutual
                   return $ L [(A "quote"), !parseExpr]
 
   parseList : Parser Val
-  parseList = return $ L !(sepBy parseExpr Main.spaces)
+  parseList = return $ L !(sepBy parseExpr Light.spaces)
 
   parseDottedList : Parser Val
   parseDottedList = do
-                      head <- endBy parseExpr Main.spaces
+                      head <- endBy parseExpr Light.spaces
                       tail <- do
                                 char '.'
-                                Main.spaces
+                                Light.spaces
                                 parseExpr
                       return $ D head tail
 
@@ -283,12 +288,13 @@ hexQuad = do
   d <- hex
   pure $ a * 4096 + b * 256 + c * 16 + d
 
+export
 evaluate : String -> Eff Val [EXCEPTION Error]
 evaluate expr = eval !(readExpr expr)
 
-main : IO ()
-main = do
-          (_ :: expr :: _) <- getArgs
-          case the (Either Error Val) $ run $ evaluate expr of
-               Left e => putStrLn $ show e
-               Right v => putStrLn $ show v
+-- main : IO ()
+-- main = do
+--           (_ :: expr :: _) <- getArgs
+--           case the (Either Error Val) $ run $ evaluate expr of
+--                Left e => putStrLn $ show e
+--                Right v => putStrLn $ show v
