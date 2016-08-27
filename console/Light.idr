@@ -165,6 +165,42 @@ boolBoolBinop op ls = toVect2 ls >>= boolBinop unpackBool op
 numericBinop : (Integer -> Integer -> Integer) -> List Val -> Either Error Val
 numericBinop op params = (liftA N) $ foldl1 (liftA2 op) $ map unpackNum params
 
+car : List Val -> Either Error Val
+car [L (x :: xs)]   = return x
+car [D (x :: xs) _] = return x
+car [badArg]        = Left $ TypeMismatch "pair" badArg
+car badArgList      = Left $ NumArgs 1 badArgList
+
+cdr : List Val -> Either Error Val
+cdr [L (x :: xs)]   = return $ L xs
+cdr [D [_] x]       = return x
+cdr [D (_ :: xs) x] = return $ D xs x
+cdr [badArg]        = Left $ TypeMismatch "pair" badArg
+cdr badArgList      = Left $ NumArgs 1 badArgList
+
+cons : List Val -> Either Error Val
+cons [x1, L []]      = return $ L [x1]
+cons [x, L xs]       = return $ L $ x :: xs
+cons [x, D xs xlast] = return $ D (x :: xs) xlast
+cons [x1, x2]        = return $ D [x1] x2
+cons badArgList      = Left $ NumArgs 2 badArgList
+
+eqv : List Val -> Either Error Val
+eqv [(B arg1), (B arg2)] = return $ B $ arg1 == arg2
+eqv [(N arg1), (N arg2)] = return $ B $ arg1 == arg2
+eqv [(S arg1), (S arg2)] = return $ B $ arg1 == arg2
+eqv [(A arg1), (A arg2)] = return $ B $ arg1 == arg2
+eqv [(D xs x), (D ys y)] = eqv [L $ xs ++ [x], L $ ys ++ [y]]
+eqv [(L arg1), (L arg2)] = return $ B $ (length arg1 == length arg2) && (all eqvPair $ zip arg1 arg2)
+                           where eqvPair (x1, x2) = case eqv [x1, x2] of
+                                                         Left err => False
+                                                         Right (B v) => v
+eqv [_, _]               = return $ B False
+eqv badArgList           = Left $ NumArgs 2 badArgList
+
+-- equal? and Weak Typing: Heterogenous Lists[edit]
+-- equal : List Val -> Either Error Val
+
 -- non-lazy version of (&&)
 and : Bool -> Bool -> Bool
 and True x  = x
@@ -195,7 +231,12 @@ primitives = [("+", numericBinop (+)),
               ("string<?", strBoolBinop (<)),
               ("string>?", strBoolBinop (>)),
               ("string<=?", strBoolBinop (<=)),
-              ("string>=?", strBoolBinop (>=))]
+              ("string>=?", strBoolBinop (>=)),
+              ("car", car),
+              ("cdr", cdr),
+              ("cons", cons),
+              ("eqv?", eqv),
+              ("eq?", eqv)]
 
 applyFunc : (func : String) -> (args : List Val) -> Eff Val [EXCEPTION Error]
 applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive function" func)
