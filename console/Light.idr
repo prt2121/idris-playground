@@ -122,9 +122,12 @@ readExpr str = case parse parseExpr str of
                    Left err => raise $ ParserE err
                    Right v  => pure v
 
-toVect2 : List Val -> Maybe (Vect 2 Val)
-toVect2 [x, y] = Just (fromList [x, y])
-toVect2 _      = Nothing
+toVect2' : List Val -> Maybe (Vect 2 Val)
+toVect2' [x, y] = Just (fromList [x, y])
+toVect2' _      = Nothing
+
+toVect2 : List Val -> Either Error (Vect 2 Val)
+toVect2 ls = maybeToEither (NumArgs 2 ls) (toVect2' ls)
 
 unpackNum : Val -> Either Error Integer
 -- unpackNum (A x)    = ?unpackNum_rhs_1
@@ -151,23 +154,13 @@ boolBinop unpacker op args = do left <- unpacker $ head args
                                 pure $ B $ left `op` right
 
 numBoolBinop : (Integer -> Integer -> Bool) -> List Val -> Either Error Val
-numBoolBinop op ls = case toVect2 ls of
-                          Just v => boolBinop unpackNum op v
-                          Nothing => Left $ NumArgs 2 ls
--- boolBinop unpackNum
-
--- (\op => case toVect2 args of
---           Just v => case op v of
---                       Left e => raise $ e
---                       Right val => pure val
---           Nothing => raise $ NumArgs 2 args)
-
+numBoolBinop op ls = toVect2 ls >>= boolBinop unpackNum op
 
 strBoolBinop : (String -> String -> Bool) -> List Val -> Either Error Val
--- strBoolBinop  = boolBinop unpackStr
+strBoolBinop op ls = toVect2 ls >>= boolBinop unpackStr op
 
 boolBoolBinop : (Bool -> Bool -> Bool) -> List Val -> Either Error Val
--- boolBoolBinop = boolBinop unpackBool
+boolBoolBinop op ls = toVect2 ls >>= boolBinop unpackBool op
 
 numericBinop : (Integer -> Integer -> Integer) -> List Val -> Either Error Val
 numericBinop op params = (liftA N) $ foldl1 (liftA2 op) $ map unpackNum params
