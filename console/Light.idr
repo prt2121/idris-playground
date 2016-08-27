@@ -122,6 +122,10 @@ readExpr str = case parse parseExpr str of
                    Left err => raise $ ParserE err
                    Right v  => pure v
 
+toVect2 : List Val -> Maybe (Vect 2 Val)
+toVect2 [x, y] = Just (fromList [x, y])
+toVect2 _      = Nothing
+
 unpackNum : Val -> Either Error Integer
 -- unpackNum (A x)    = ?unpackNum_rhs_1
 unpackNum (L [n])  = unpackNum n
@@ -146,16 +150,26 @@ boolBinop unpacker op args = do left <- unpacker $ head args
                                 right <- unpacker $ last args
                                 pure $ B $ left `op` right
 
-numBoolBinop : (Integer -> Integer -> Bool) -> Vect 2 Val -> Either Error Val
-numBoolBinop  = boolBinop unpackNum
+numBoolBinop : (Integer -> Integer -> Bool) -> List Val -> Either Error Val
+numBoolBinop op ls = case toVect2 ls of
+                          Just v => boolBinop unpackNum op v
+                          Nothing => Left $ NumArgs 2 ls
+-- boolBinop unpackNum
 
-strBoolBinop : (String -> String -> Bool) -> Vect 2 Val -> Either Error Val
-strBoolBinop  = boolBinop unpackStr
+-- (\op => case toVect2 args of
+--           Just v => case op v of
+--                       Left e => raise $ e
+--                       Right val => pure val
+--           Nothing => raise $ NumArgs 2 args)
 
-boolBoolBinop : (Bool -> Bool -> Bool) -> Vect 2 Val -> Either Error Val
-boolBoolBinop = boolBinop unpackBool
 
-numericBinop : (Integer -> Integer -> Integer) -> Vect 2 Val -> Either Error Val
+strBoolBinop : (String -> String -> Bool) -> List Val -> Either Error Val
+-- strBoolBinop  = boolBinop unpackStr
+
+boolBoolBinop : (Bool -> Bool -> Bool) -> List Val -> Either Error Val
+-- boolBoolBinop = boolBinop unpackBool
+
+numericBinop : (Integer -> Integer -> Integer) -> List Val -> Either Error Val
 numericBinop op params = (liftA N) $ foldl1 (liftA2 op) $ map unpackNum params
 
 -- non-lazy version of (&&)
@@ -168,7 +182,7 @@ or : Bool -> Bool -> Bool
 or False x = x
 or True _  = True
 
-primitives : List (String, Vect 2 Val -> Either Error Val)
+primitives : List (String, List Val -> Either Error Val)
 primitives = [("+", numericBinop (+)),
               ("-", numericBinop (-)),
               ("*", numericBinop (*)),
@@ -190,20 +204,19 @@ primitives = [("+", numericBinop (+)),
               ("string<=?", strBoolBinop (<=)),
               ("string>=?", strBoolBinop (>=))]
 
-toVect2 : List Val -> Maybe (Vect 2 Val)
-toVect2 [x, y] = Just (fromList [x, y])
-toVect2 _      = Nothing
-
 applyFunc : (func : String) -> (args : List Val) -> Eff Val [EXCEPTION Error]
 applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive function" func)
-                            (\op => case toVect2 args of
-                                      Just v => case op v of
-                                                  Left e => raise $ e
-                                                  Right val => pure val
-                                      Nothing => raise $ NumArgs 2 args)
-                            $ lookup func primitives
+                            (\op => case op args of
+                                         Right v => pure v
+                                         Left e => raise e)
+                            $ List.lookup func primitives
 
 eval : Val -> Eff Val [EXCEPTION Error]
+eval (L [A "if", pred, conseq, alt]) = do
+                                         result <- eval pred
+                                         case result of
+                                              B False   => eval alt
+                                              otherwise => eval conseq
 -- eval (A x) = ?eval_rhs_1 -- todo
 eval (L [A "quote", val]) = pure val
 eval (L (A func :: args)) = do
@@ -218,7 +231,7 @@ eval (L (A func :: args)) = do
 eval val@(N x) = pure $ val
 eval val@(S x) = pure $ val
 eval val@(B x) = pure $ val
-eval badForm = raise $ BadSpecialForm "Unrecognized special form" badForm
+eval badForm   = raise $ BadSpecialForm "Unrecognized special form" badForm
 
 hex : Parser Int
 hex = do
