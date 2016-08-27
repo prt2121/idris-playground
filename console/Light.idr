@@ -178,14 +178,13 @@ cdr [D (_ :: xs) x] = return $ D xs x
 cdr [badArg]        = Left $ TypeMismatch "pair" badArg
 cdr badArgList      = Left $ NumArgs 1 badArgList
 
-cons : List Val -> Either Error Val
+cons : Vect 2 Val -> Either Error Val
 cons [x1, L []]      = return $ L [x1]
 cons [x, L xs]       = return $ L $ x :: xs
 cons [x, D xs xlast] = return $ D (x :: xs) xlast
 cons [x1, x2]        = return $ D [x1] x2
-cons badArgList      = Left $ NumArgs 2 badArgList
 
-eqv : List Val -> Either Error Val
+eqv : Vect 2 Val -> Either Error Val
 eqv [(B arg1), (B arg2)] = return $ B $ arg1 == arg2
 eqv [(N arg1), (N arg2)] = return $ B $ arg1 == arg2
 eqv [(S arg1), (S arg2)] = return $ B $ arg1 == arg2
@@ -196,7 +195,6 @@ eqv [(L arg1), (L arg2)] = return $ B $ (length arg1 == length arg2) && (all eqv
                                                          Left err => False
                                                          Right (B v) => v
 eqv [_, _]               = return $ B False
-eqv badArgList           = Left $ NumArgs 2 badArgList
 
 -- equal? and Weak Typing: Heterogenous Lists[edit]
 -- equal : List Val -> Either Error Val
@@ -210,6 +208,10 @@ and False _ = False
 or : Bool -> Bool -> Bool
 or False x = x
 or True _  = True
+
+infixr 1 >=>
+(>=>) : Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
+(>=>) f g = \x => f x >>= g
 
 primitives : List (String, List Val -> Either Error Val)
 primitives = [("+", numericBinop (+)),
@@ -234,9 +236,9 @@ primitives = [("+", numericBinop (+)),
               ("string>=?", strBoolBinop (>=)),
               ("car", car),
               ("cdr", cdr),
-              ("cons", cons),
-              ("eqv?", eqv),
-              ("eq?", eqv)]
+              ("cons", toVect2 >=> cons),
+              ("eqv?", toVect2 >=> eqv),
+              ("eq?", toVect2 >=> eqv)]
 
 applyFunc : (func : String) -> (args : List Val) -> Eff Val [EXCEPTION Error]
 applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive function" func)
