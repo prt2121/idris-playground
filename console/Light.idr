@@ -9,6 +9,7 @@ import Data.String
 
 import Effects
 import Effect.Exception
+import Effect.State
 
 export
 data Val = A String -- atom
@@ -24,9 +25,37 @@ data Error = ParserE String
            | NotFunction String String
            | NumArgs Integer (List Val)
            | TypeMismatch String Val
+           | UnboundVar String String
 
 ThrowsError : Type -> Type
 ThrowsError = Either Error
+
+Env : Type
+Env = List (String, Val)
+
+isBound : String -> Eff Bool [STATE Env]
+isBound var = case (lookup var !get) of
+                   Nothing => return False
+                   Just _  => return True
+
+getVar : String -> Eff Val [STATE Env, EXCEPTION Error]
+getVar var = case lookup var !get of
+                  Nothing => raise $ UnboundVar "Getting an unbound variable" var
+                  Just val => return val
+
+-- update var `n` with v
+updateEnv : String -> Val -> List (String, Val) -> List (String, Val)
+updateEnv n v ls = map set ls
+                   where
+                    set : (String, Val) -> (String, Val)
+                    set (a, b) = if a == n
+                                 then (a, v)
+                                 else (a, b)
+
+setVar : String -> Val -> Eff () [STATE Env, EXCEPTION Error]
+setVar var val = case lookup var !get of
+                      Nothing => raise $ UnboundVar "Getting an unbound variable" var
+                      Just v => update (updateEnv var v)
 
 mutual
   unwordsList : List Val -> String
@@ -49,6 +78,7 @@ Show Val where
 export
 Show Error where
   show (ParserE e)          = "Parse error " ++ e
+  show (UnboundVar m v)     = m ++ ": " ++ v
   show (BadSpecialForm s v) = s ++ " : " ++ show v
   show (NotFunction s f)    = s ++ " : " ++ show f
   show (NumArgs e f)        = "Expected " ++ show e ++ " args; found " ++ (show $ length f)
