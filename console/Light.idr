@@ -52,10 +52,11 @@ updateEnv n v ls = map set ls
                                  then (a, v)
                                  else (a, b)
 
-setVar : String -> Val -> Eff () [STATE Env, EXCEPTION Error]
+setVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
 setVar var val = case lookup var !get of
                       Nothing => raise $ UnboundVar "Getting an unbound variable" var
-                      Just v => update (updateEnv var v)
+                      Just v => do update (updateEnv var v)
+                                   return val
 
 mutual
   unwordsList : List Val -> String
