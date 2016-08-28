@@ -131,10 +131,10 @@ toVect2' : List Val -> Maybe (Vect 2 Val)
 toVect2' [x, y] = Just (fromList [x, y])
 toVect2' _      = Nothing
 
-toVect2 : List Val -> Either Error (Vect 2 Val)
+toVect2 : List Val -> ThrowsError (Vect 2 Val)
 toVect2 ls = maybeToEither (NumArgs 2 ls) (toVect2' ls)
 
-unpackNum : Val -> Either Error Integer
+unpackNum : Val -> ThrowsError Integer
 -- unpackNum (A x)    = ?unpackNum_rhs_1
 unpackNum (L [n])  = unpackNum n
 -- unpackNum (D xs x) = ?unpackNum_rhs_3
@@ -143,53 +143,53 @@ unpackNum (S n)    = maybeToEither (TypeMismatch "number" (S n)) $ parseInteger 
 -- unpackNum (B x)    = ?unpackNum_rhs_6
 unpackNum notNum   = Left $ TypeMismatch "number" notNum
 
-unpackStr : Val -> Either Error String
+unpackStr : Val -> ThrowsError String
 unpackStr (S s)      = Right s
 unpackStr (N s)      = Right $ show s
 unpackStr (B s)      = Right $ show s
 unpackStr notString  = Left $ TypeMismatch "string" notString
 
-unpackBool : Val -> Either Error Bool
+unpackBool : Val -> ThrowsError Bool
 unpackBool (B b) = Right b
 unpackBool notBool  = Left $ TypeMismatch "boolean" notBool
 
-boolBinop : (unpacker : Val -> Either Error a) -> (a -> a -> Bool) -> Vect 2 Val -> Either Error Val
+boolBinop : (unpacker : Val -> ThrowsError a) -> (a -> a -> Bool) -> Vect 2 Val -> ThrowsError Val
 boolBinop unpacker op args = do left <- unpacker $ head args
                                 right <- unpacker $ last args
                                 pure $ B $ left `op` right
 
-numBoolBinop : (Integer -> Integer -> Bool) -> List Val -> Either Error Val
+numBoolBinop : (Integer -> Integer -> Bool) -> List Val -> ThrowsError Val
 numBoolBinop op ls = toVect2 ls >>= boolBinop unpackNum op
 
-strBoolBinop : (String -> String -> Bool) -> List Val -> Either Error Val
+strBoolBinop : (String -> String -> Bool) -> List Val -> ThrowsError Val
 strBoolBinop op ls = toVect2 ls >>= boolBinop unpackStr op
 
-boolBoolBinop : (Bool -> Bool -> Bool) -> List Val -> Either Error Val
+boolBoolBinop : (Bool -> Bool -> Bool) -> List Val -> ThrowsError Val
 boolBoolBinop op ls = toVect2 ls >>= boolBinop unpackBool op
 
-numericBinop : (Integer -> Integer -> Integer) -> List Val -> Either Error Val
+numericBinop : (Integer -> Integer -> Integer) -> List Val -> ThrowsError Val
 numericBinop op params = (liftA N) $ foldl1 (liftA2 op) $ map unpackNum params
 
-car : List Val -> Either Error Val
+car : List Val -> ThrowsError Val
 car [L (x :: xs)]   = return x
 car [D (x :: xs) _] = return x
 car [badArg]        = Left $ TypeMismatch "pair" badArg
 car badArgList      = Left $ NumArgs 1 badArgList
 
-cdr : List Val -> Either Error Val
+cdr : List Val -> ThrowsError Val
 cdr [L (x :: xs)]   = return $ L xs
 cdr [D [_] x]       = return x
 cdr [D (_ :: xs) x] = return $ D xs x
 cdr [badArg]        = Left $ TypeMismatch "pair" badArg
 cdr badArgList      = Left $ NumArgs 1 badArgList
 
-cons : Vect 2 Val -> Either Error Val
+cons : Vect 2 Val -> ThrowsError Val
 cons [x1, L []]      = return $ L [x1]
 cons [x, L xs]       = return $ L $ x :: xs
 cons [x, D xs xlast] = return $ D (x :: xs) xlast
 cons [x1, x2]        = return $ D [x1] x2
 
-eqv : Vect 2 Val -> Either Error Val
+eqv : Vect 2 Val -> ThrowsError Val
 eqv [(B arg1), (B arg2)] = return $ B $ arg1 == arg2
 eqv [(N arg1), (N arg2)] = return $ B $ arg1 == arg2
 eqv [(S arg1), (S arg2)] = return $ B $ arg1 == arg2
@@ -202,7 +202,7 @@ eqv [(L arg1), (L arg2)] = return $ B $ (length arg1 == length arg2) && (all eqv
 eqv [_, _]               = return $ B False
 
 -- equal? and Weak Typing: Heterogenous Lists[edit]
--- equal : List Val -> Either Error Val
+-- equal : List Val -> ThrowsError Val
 
 -- non-lazy version of (&&)
 and : Bool -> Bool -> Bool
@@ -218,7 +218,7 @@ infixr 1 >=>
 (>=>) : Monad m => (a -> m b) -> (b -> m c) -> (a -> m c)
 (>=>) f g = \x => f x >>= g
 
-primitives : List (String, List Val -> Either Error Val)
+primitives : List (String, List Val -> ThrowsError Val)
 primitives = [("+", numericBinop (+)),
               ("-", numericBinop (-)),
               ("*", numericBinop (*)),
@@ -291,10 +291,3 @@ hexQuad = do
 export
 evaluate : String -> Eff Val [EXCEPTION Error]
 evaluate expr = eval !(readExpr expr)
-
--- main : IO ()
--- main = do
---           (_ :: expr :: _) <- getArgs
---           case the (Either Error Val) $ run $ evaluate expr of
---                Left e => putStrLn $ show e
---                Right v => putStrLn $ show v
