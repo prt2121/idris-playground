@@ -215,6 +215,27 @@ applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive functio
                                          Left e => raise e)
                             $ List.lookup func primitives
 
+
+eval' : Val -> Eff Val [STATE Env, EXCEPTION Error]
+eval' val@(S x) = pure $ val
+eval' val@(N x) = pure $ val
+eval' val@(B x) = pure $ val
+eval' (A id)    = getVar id
+eval' (L [A "if", pred, conseq, alt]) = do result <- eval' pred
+                                           case result of
+                                                B False   => eval' alt
+                                                otherwise => eval' conseq
+eval' (L [A "set!", A var, form]) = setVar var !(eval' form)
+eval' (L [A "define", A var, form]) = defineVar var !(eval' form)
+eval' (L (A func :: args)) = do args' <- mapEff eval' args
+                                applyFunc func args'
+                             where mapEff : (f : Val -> Eff Val [STATE Env, EXCEPTION Error]) -> List Val -> Eff (List Val) [STATE Env, EXCEPTION Error]
+                                   mapEff f []        = pure []
+                                   mapEff f (x :: xs) = do x' <- f x
+                                                           pure $ x' :: !(mapEff f xs)
+eval' badForm = raise $ BadSpecialForm "Unrecognized special form" badForm
+
+
 eval : Val -> Eff Val [EXCEPTION Error]
 eval (L [A "if", pred, conseq, alt]) = do
                                          result <- eval pred
