@@ -28,19 +28,34 @@ getVar var = case lookup var !get of
                   Just val => return val
 
 -- update var `n` with v
-updateEnv : String -> Val -> List (String, Val) -> List (String, Val)
-updateEnv n v ls = map set ls
+updateList : String -> Val -> List (String, Val) -> List (String, Val)
+updateList n v ls = map set ls
                    where
                     set : (String, Val) -> (String, Val)
                     set (a, b) = if a == n
                                  then (a, v)
                                  else (a, b)
 
+addToList : String -> Val -> List (String, Val) -> List (String, Val)
+addToList n v ls = (n, v) :: ls
+
 setVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
 setVar var val = case lookup var !get of
                       Nothing => raise $ UnboundVar "Getting an unbound variable" var
-                      Just v => do update (updateEnv var v)
+                      Just v => do update (updateList var v)
                                    return val
+
+defineVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
+defineVar var val = do
+                      alreadyDefined <- isBound var
+                      if alreadyDefined
+                      then return !(setVar var val)
+                      else do update (addToList var val)
+                              return val
+
+bindVars : List (String, Val) -> Eff Env [STATE Env]
+bindVars bindings = do update (++ bindings)
+                       return !get
 
 mutual
   unwordsList : List Val -> String
