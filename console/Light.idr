@@ -14,6 +14,7 @@ import Types
 ThrowsError : Type -> Type
 ThrowsError = Either Error
 
+public export
 Env : Type
 Env = List (String, Val)
 
@@ -24,7 +25,7 @@ isBound var = case (lookup var !get) of
 
 getVar : String -> Eff Val [STATE Env, EXCEPTION Error]
 getVar var = case lookup var !get of
-                  Nothing => raise $ UnboundVar "Getting an unbound variable" var
+                  Nothing => raise $ UnboundVar "unbound variable" var
                   Just val => return val
 
 -- update var `n` with v
@@ -41,17 +42,22 @@ addToList n v ls = (n, v) :: ls
 
 setVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
 setVar var val = case lookup var !get of
-                      Nothing => raise $ UnboundVar "Getting an unbound variable" var
+                      Nothing => raise $ UnboundVar "unbound variable" var
                       Just v => do update (updateList var v)
                                    return val
 
+-- todo: always go to then case
+-- defineVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
+-- defineVar var val = do
+--                      alreadyDefined <- isBound var
+--                      if alreadyDefined
+--                         then return !(setVar var val)
+--                         else do update (addToList var val)
+--                                 return val
+
 defineVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
-defineVar var val = do
-                      alreadyDefined <- isBound var
-                      if alreadyDefined
-                      then return !(setVar var val)
-                      else do update (addToList var val)
-                              return val
+defineVar var val = do update (addToList var val)
+                       return val
 
 bindVars : List (String, Val) -> Eff Env [STATE Env]
 bindVars bindings = do update (++ bindings)
@@ -259,5 +265,5 @@ eval val@(B x) = pure $ val
 eval badForm   = raise $ BadSpecialForm "Unrecognized special form" badForm
 
 export
-evaluate : String -> Eff Val [EXCEPTION Error]
-evaluate expr = eval !(readExpr expr)
+evaluate : String -> Eff Val [STATE Env, EXCEPTION Error]
+evaluate expr = eval' !(readExpr expr)
