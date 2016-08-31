@@ -46,18 +46,11 @@ setVar var val = case lookup var !get of
                       Just v => do update (updateList var v)
                                    return val
 
--- todo: always go to then case
--- defineVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
--- defineVar var val = do
---                      alreadyDefined <- isBound var
---                      if alreadyDefined
---                         then return !(setVar var val)
---                         else do update (addToList var val)
---                                 return val
-
 defineVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
-defineVar var val = do update (addToList var val)
-                       return val
+defineVar var val = do case !(isBound var) of
+                            True => return !(setVar var val)
+                            False => do update (addToList var val)
+                                        return val
 
 bindVars : List (String, Val) -> Eff Env [STATE Env]
 bindVars bindings = do update (++ bindings)
