@@ -21,8 +21,15 @@ readPrompt : String -> Eff String [STDIO]
 readPrompt prompt = do putStr prompt
                        getStr
 
+-- todo: catch errors
 evalString : String -> Eff String [STATE Env, EXCEPTION Error]
 evalString expr = return $ show !(evaluate expr)
+
+-- lose states
+-- evalAndPrint : String -> Eff () [STATE Env, STDIO, EXCEPTION Error]
+-- evalAndPrint expr =  do case run (evalString expr) of
+--                              Left e => putStrLn $ show e
+--                              Right s => putStrLn s
 
 evalAndPrint : String -> Eff () [STATE Env, STDIO, EXCEPTION Error]
 evalAndPrint expr =  do s <- evalString expr
@@ -35,7 +42,7 @@ go : List String -> IO ()
 go [_] = runInit ([] :: () :: () :: []) runRepl
 go [_, expr] = runInit ([] :: () :: () :: []) $ evalAndPrint expr
 go _ = do putStrLn "Program takes only 0 or 1 argument"
---
+
 main : IO ()
 main = do args <- getArgs
           go args
