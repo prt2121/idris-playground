@@ -20,13 +20,13 @@ Env = List (String, Val)
 
 isBound : String -> Eff Bool [STATE Env]
 isBound var = case (lookup var !get) of
-                   Nothing => return False
-                   Just _  => return True
+                   Nothing => pure False
+                   Just _  => pure True
 
 getVar : String -> Eff Val [STATE Env, EXCEPTION Error]
 getVar var = case lookup var !get of
                   Nothing => raise $ UnboundVar "unbound variable" var
-                  Just val => return val
+                  Just val => pure val
 
 -- update var `n` with v
 updateList : String -> Val -> List (String, Val) -> List (String, Val)
@@ -44,17 +44,17 @@ setVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
 setVar var val = case lookup var !get of
                       Nothing => raise $ UnboundVar "unbound variable" var
                       Just v => do update (updateList var v)
-                                   return val
+                                   pure val
 
 defineVar : String -> Val -> Eff Val [STATE Env, EXCEPTION Error]
 defineVar var val = do case !(isBound var) of
-                            True => return !(setVar var val)
+                            True => pure !(setVar var val)
                             False => do update (addToList var val)
-                                        return val
+                                        pure val
 
 bindVars : List (String, Val) -> Eff Env [STATE Env]
 bindVars bindings = do update (++ bindings)
-                       return !get
+                       pure !get
 
 mutual
   unwordsList : List Val -> String
@@ -133,35 +133,35 @@ numericBinop : (Integer -> Integer -> Integer) -> List Val -> ThrowsError Val
 numericBinop op params = (liftA N) $ foldl1 (liftA2 op) $ map unpackNum params
 
 car : List Val -> ThrowsError Val
-car [L (x :: xs)]   = return x
-car [D (x :: xs) _] = return x
+car [L (x :: xs)]   = pure x
+car [D (x :: xs) _] = pure x
 car [badArg]        = Left $ TypeMismatch "pair" badArg
 car badArgList      = Left $ NumArgs 1 badArgList
 
 cdr : List Val -> ThrowsError Val
-cdr [L (x :: xs)]   = return $ L xs
-cdr [D [_] x]       = return x
-cdr [D (_ :: xs) x] = return $ D xs x
+cdr [L (x :: xs)]   = pure $ L xs
+cdr [D [_] x]       = pure x
+cdr [D (_ :: xs) x] = pure $ D xs x
 cdr [badArg]        = Left $ TypeMismatch "pair" badArg
 cdr badArgList      = Left $ NumArgs 1 badArgList
 
 cons : Vect 2 Val -> ThrowsError Val
-cons [x1, L []]      = return $ L [x1]
-cons [x, L xs]       = return $ L $ x :: xs
-cons [x, D xs xlast] = return $ D (x :: xs) xlast
-cons [x1, x2]        = return $ D [x1] x2
+cons [x1, L []]      = pure $ L [x1]
+cons [x, L xs]       = pure $ L $ x :: xs
+cons [x, D xs xlast] = pure $ D (x :: xs) xlast
+cons [x1, x2]        = pure $ D [x1] x2
 
 eqv : Vect 2 Val -> ThrowsError Val
-eqv [(B arg1), (B arg2)] = return $ B $ arg1 == arg2
-eqv [(N arg1), (N arg2)] = return $ B $ arg1 == arg2
-eqv [(S arg1), (S arg2)] = return $ B $ arg1 == arg2
-eqv [(A arg1), (A arg2)] = return $ B $ arg1 == arg2
+eqv [(B arg1), (B arg2)] = pure $ B $ arg1 == arg2
+eqv [(N arg1), (N arg2)] = pure $ B $ arg1 == arg2
+eqv [(S arg1), (S arg2)] = pure $ B $ arg1 == arg2
+eqv [(A arg1), (A arg2)] = pure $ B $ arg1 == arg2
 eqv [(D xs x), (D ys y)] = eqv [L $ xs ++ [x], L $ ys ++ [y]]
-eqv [(L arg1), (L arg2)] = return $ B $ (length arg1 == length arg2) && (all eqvPair $ zip arg1 arg2)
+eqv [(L arg1), (L arg2)] = pure $ B $ (length arg1 == length arg2) && (all eqvPair $ zip arg1 arg2)
                            where eqvPair (x1, x2) = case eqv [x1, x2] of
                                                          Left err => False
                                                          Right (B v) => v
-eqv [_, _]               = return $ B False
+eqv [_, _]               = pure $ B False
 
 -- equal? and Weak Typing: Heterogenous Lists[edit]
 -- equal : List Val -> ThrowsError Val

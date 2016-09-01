@@ -12,7 +12,7 @@ until_ : (String -> Bool) -> (Eff String [STDIO]) -> (String -> Eff () [STATE En
 until_ pred prompt action = do
                               result <- prompt
                               if pred result
-                                then return ()
+                                then pure ()
                                 else do action result
                                         until_ pred prompt action
 
@@ -23,7 +23,7 @@ readPrompt prompt = do putStr prompt
 
 -- todo: catch errors
 evalString : String -> Eff String [STATE Env, EXCEPTION Error]
-evalString expr = return $ show !(evaluate expr)
+evalString expr = pure $ show !(evaluate expr)
 
 -- lose states
 -- evalAndPrint : String -> Eff () [STATE Env, STDIO, EXCEPTION Error]

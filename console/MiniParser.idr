@@ -19,14 +19,14 @@ parseString = do
                 char '"'
                 x <- many $ noneOf "\""
                 char '"'
-                return $ S $ pack x
+                pure $ S $ pack x
 
 parseAtom : Parser Val
 parseAtom = do
               fst <- letter <|> symbol
               rest <- many (alphaNum <|> symbol)
               let atom = pack $ fst :: rest
-              return $ case atom of
+              pure $ case atom of
                             "#t" => B True
                             "#f" => B False
                             otherwise => A atom
@@ -41,16 +41,16 @@ positiveInt = do
                 getInteger = foldl (\a => \b => 10 * a + cast b) 0
 
 parseNumber : Parser Val
-parseNumber = return $ N !positiveInt
+parseNumber = pure $ N !positiveInt
 
 mutual
   parseQuoted : Parser Val
   parseQuoted = do
                   char '\''
-                  return $ L [(A "quote"), !parseExpr]
+                  pure $ L [(A "quote"), !parseExpr]
 
   parseList : Parser Val
-  parseList = return $ L !(sepBy parseExpr MiniParser.spaces)
+  parseList = pure $ L !(sepBy parseExpr MiniParser.spaces)
 
   parseDottedList : Parser Val
   parseDottedList = do
@@ -59,7 +59,7 @@ mutual
                                 char '.'
                                 MiniParser.spaces
                                 parseExpr
-                      return $ D head tail
+                      pure $ D head tail
 
   export
   parseExpr : Parser Val
@@ -70,8 +70,8 @@ mutual
            <|> do char '('
                   x <- parseList
                   char ')'
-                  return x
+                  pure x
            <|> do char '('
                   x <- parseDottedList
                   char ')'
-                  return x
+                  pure x
