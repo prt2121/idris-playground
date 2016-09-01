@@ -39,8 +39,8 @@ runRepl : Eff () [STATE Env, STDIO, EXCEPTION Error]
 runRepl = until_ (== "quit") (readPrompt "Lisp>>> ") evalAndPrint
 
 go : List String -> IO ()
-go [_] = runInit ([] :: () :: () :: []) runRepl
-go [_, expr] = runInit ([] :: () :: () :: []) $ evalAndPrint expr
+go [_] = run runRepl
+go [_, expr] = run $ evalAndPrint expr
 go _ = do putStrLn "Program takes only 0 or 1 argument"
 
 main : IO ()
