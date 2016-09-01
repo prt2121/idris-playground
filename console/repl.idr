@@ -8,7 +8,10 @@ import Effect.State
 import Light
 import Types
 
-until_ : (String -> Bool) -> (Eff String [STDIO]) -> (String -> Eff () [STATE Env, STDIO, EXCEPTION Error]) -> (Eff () [STATE Env, STDIO, EXCEPTION Error])
+until_ : (pred : String -> Bool)
+         -> (prompt : Eff String [STDIO])
+         -> (action : String -> Eff () [STATE Env, STDIO, EXCEPTION Error])
+         -> (Eff () [STATE Env, STDIO, EXCEPTION Error])
 until_ pred prompt action = do
                               result <- prompt
                               if pred result
