@@ -45,10 +45,6 @@ defineVar var val = do case !(isBound var) of
                             False => do update (addToList var val)
                                         pure val
 
-bindVars : List (String, Val) -> Eff Env [STATE Env]
-bindVars bindings = do update (++ bindings)
-                       pure !get
-
 readExpr : String -> Eff Val [EXCEPTION Error]
 readExpr str = case parse parseExpr str of
                    Left err => raise $ ParserE err
@@ -171,6 +167,35 @@ primitives = [("+", numericBinop (+)),
               ("cons", toVect2 >=> cons),
               ("eqv?", toVect2 >=> eqv),
               ("eq?", toVect2 >=> eqv)]
+
+-- bindVars : List (String, Val) -> Eff Env [STATE Env]
+-- bindVars bindings = do update (++ bindings)
+--                        pure !get
+
+-- bindVars : List (String, Val) -> Eff Env [STATE Env]
+
+bindVars : List (String, Val)
+           -> List (String, Val)
+           -> Eff Env [STATE Env, EXCEPTION Error]
+bindVars env bindings = do put (env ++ bindings)
+                           pure !get
+
+bindVarArgs : (varargs : Maybe String)
+              -> (env : Env)
+              -> Eff Env [STATE Env, EXCEPTION Error]
+
+evalBody : (env : Env) -> Val
+
+apply : Val -> (args : List Val) -> Eff Val [STATE Env, EXCEPTION Error]
+apply (PrimitiveFunc func) args = case func args of
+                                       Right v => pure v
+                                       Left e => raise e
+apply (Func params varargs body closure) args =
+  if length params /= length args && varargs == Nothing
+     then raise $ NumArgs (cast $ length params) args
+     else do env <- (bindVars closure (zip params args))
+             env' <- bindVarArgs varargs env
+             pure $ evalBody env'
 
 applyFunc : (func : String) -> (args : List Val) -> Eff Val [EXCEPTION Error]
 applyFunc func args = maybe (raise $ NotFunction "Unrecognized primitive function" func)
