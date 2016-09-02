@@ -11,13 +11,6 @@ import Effect.State
 import MiniParser
 import Types
 
-ThrowsError : Type -> Type
-ThrowsError = Either Error
-
-public export
-Env : Type
-Env = List (String, Val)
-
 isBound : String -> Eff Bool [STATE Env]
 isBound var = case (lookup var !get) of
                    Nothing => pure False
@@ -55,34 +48,6 @@ defineVar var val = do case !(isBound var) of
 bindVars : List (String, Val) -> Eff Env [STATE Env]
 bindVars bindings = do update (++ bindings)
                        pure !get
-
-mutual
-  unwordsList : List Val -> String
-  unwordsList = unwords . map showVal
-
-  export
-  showVal : Val -> String
-  showVal (A x) = x
-  showVal (L xs) = "(" ++ unwordsList xs ++ ")"
-  showVal (D xs x) = "(" ++ unwordsList xs ++ " . " ++ showVal x ++ ")"
-  showVal (N x) = show x
-  showVal (S x) = "\"" ++ x ++ "\""
-  showVal (B True) = "#t"
-  showVal (B False) = "#f"
-
-export
-Show Val where
-  show = showVal
-
-export
-Show Error where
-  show (ParserE e)          = "Parse error " ++ e
-  show (UnboundVar m v)     = m ++ ": " ++ v
-  show (BadSpecialForm s v) = s ++ " : " ++ show v
-  show (NotFunction s f)    = s ++ " : " ++ show f
-  show (NumArgs e f)        = "Expected " ++ show e ++ " args; found " ++ (show $ length f)
-  show (TypeMismatch e f)   = "Invalid type: expected " ++ e ++ ", found " ++ show f
-  show _                    = "Error!!!"
 
 readExpr : String -> Eff Val [EXCEPTION Error]
 readExpr str = case parse parseExpr str of
