@@ -1,0 +1,8 @@
+package scheme
+
+sourcedir = .
+modules = Repl
+executable = repl
+main = Main
+
+pkgs = lightyear, effects
