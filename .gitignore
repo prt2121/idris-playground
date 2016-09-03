@@ -1,0 +1,6 @@
+*.ibc
+*.o
+.DS_Store
+
+# executable
+scheme
