@@ -4,3 +4,5 @@
 
 # executable
 scheme
+repl
+parser

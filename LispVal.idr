@@ -14,7 +14,7 @@ mutual
                  | TypeMismatch String LispVal
                  | BadSpecialForm String LispVal
                  | NotFunction String String
-                 | UnboundVar String String
+                 | UnboundVar String LispVal
                  | Default String
                  | LispErr String
 
@@ -28,7 +28,7 @@ mutual
 
   public export
   record IFunc where
-    constructor MkIFunc
+    constructor MkFun
     fn : L.List LispVal -> Eval LispVal
 
   public export
@@ -66,7 +66,7 @@ Show LispVal where
 
 export
 Show LispError where
-     show (UnboundVar m v)     = m ++ ": " ++ v
+     show (UnboundVar m v)     = m ++ ": " ++ show v
      show (BadSpecialForm s v) = s ++ " : " ++ show v
      show (NotFunction s f)    = s ++ " : " ++ show f
      show (NumArgs e f)        = "Expected " ++ show e ++ " args; found " ++ (show $ length f)
