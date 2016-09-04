@@ -135,6 +135,13 @@ textToEval input =
        Left err  => raise $ err
 
 
+runAppInit : EnvCtx -> Eval b -> Eff (EnvCtx, b) [STATE EnvCtx, STDIO, EXCEPTION LispError]
+runAppInit code action =
+ do
+   put code
+   pure (!get, !action)
+
+
 runApp : EnvCtx -> Eval b -> Eff b [STATE EnvCtx, STDIO, EXCEPTION LispError]
 runApp code action =
   do
