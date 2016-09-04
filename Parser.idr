@@ -8,6 +8,8 @@ import Lightyear.Strings as L
 
 import Combinator
 
+import Utils
+
 export
 data ParseError = ParseErr String
 
@@ -78,7 +80,6 @@ mutual
                   char ')'
                   pure x
 
--- parse and mapLeft ParseErr
 export
 readExpr : String -> Either ParseError LispVal
-readExpr = mirror . (map ParseErr) . mirror . (parse parseExpr)
+readExpr = (mapLeft ParseErr) . (parse parseExpr)
