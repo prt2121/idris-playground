@@ -88,7 +88,7 @@ mutual
   eval (List [fn, a, b]) = do
                              func <- getVar fn
                              case func of
-                                  (Fun (MkFun f)) => f [a, b]
+                                  (Fun (MkFun f)) => f [!(eval a), !(eval b)]
                                   _ => raise $ NotFunction "Unrecognized primitive function" $ show func
 
 
@@ -114,8 +114,9 @@ uncurryDef = uncurry defineVar
 
 bindVars : L.List (LispVal, LispVal) -> Eval ()
 bindVars [] = pure ()
-bindVars (x :: xs) = do uncurryDef x
-                        bindVars xs
+bindVars (x :: xs) =
+  do uncurryDef x
+     bindVars xs
 
 
 runParse_ : String -> Either LispError LispVal
@@ -128,9 +129,10 @@ testEnv = ("x", Number 42) :: primEnv
 
 export
 textToEval : String -> Eval LispVal
-textToEval input = case runParse_ input of
-                        Right val => eval val
-                        Left err  => raise $ err
+textToEval input =
+  case runParse_ input of
+       Right val => eval val
+       Left err  => raise $ err
 
 
 runApp : EnvCtx -> Eval b -> Eff b [STATE EnvCtx, STDIO, EXCEPTION LispError]
@@ -141,8 +143,13 @@ runApp code action =
 
 
 export
-evalExpr : String -> IO ()
-evalExpr expr =
+evaluate : EnvCtx -> String -> IO ()
+evaluate env expr =
   do
-    out <- run $ runApp testEnv $ textToEval expr
+    out <- run $ runApp env $ textToEval expr
     putStrLn $ show out
+
+
+export
+evalExpr : String -> IO ()
+evalExpr = evaluate testEnv

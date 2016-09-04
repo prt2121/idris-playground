@@ -22,5 +22,13 @@ runEvalExp = do
                 evalExpr expr
 
 
+repl : IO ()
+repl = do
+  putStr ">>> "
+  exp <- getLine
+  evalExpr exp
+  repl
+
+
 main : IO ()
-main = runEvalExp
+main = repl
