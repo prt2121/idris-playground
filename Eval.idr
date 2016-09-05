@@ -143,10 +143,22 @@ runApp code action =
     v <- action
     pure (!get, v)
 
+
 export
 evalExpr : EnvCtx -> String -> IO EnvCtx
 evalExpr env expr =
   do
-    (e, v) <- run $ runApp env $ textToEval expr
-    putStrLn $ show v
-    pure $ e
+    case the (Either LispError LispVal) $ runInit (env :: () :: []) (textToEval expr) of
+      Left err => do putStrLn $ show err
+                     pure $ env
+      Right val => do (e, v) <- run $ runApp env $ pure val
+                      putStrLn $ show v
+                      pure $ e
+  -- do
+  --   case the (Either LispError (EnvCtx, LispVal)) $ run $ runApp env $ textToEval expr of
+  --        Left e => putStrLn $ show e
+  --        Right v => pure ?returnSth
+  -- do
+  --   (e, v) <- run $ runApp env $ textToEval expr
+  --   putStrLn $ show v
+  --   pure $ e
