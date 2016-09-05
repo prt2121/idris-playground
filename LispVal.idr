@@ -32,12 +32,21 @@ mutual
     fn : L.List LispVal -> Eval LispVal
 
   public export
+  record Func where
+    constructor MkFunc
+    args : L.List LispVal
+    vararg : (Maybe String)
+    body : L.List LispVal
+    env : EnvCtx
+
+  public export
   data LispVal = Atom String
                | List (L.List LispVal)
                | DottedList (L.List LispVal) LispVal
                | Number Integer
                | Str String
                | Fun IFunc
+               | Lambda Func EnvCtx
                | Bool B.Bool
 
 mutual
@@ -58,7 +67,6 @@ mutual
   showVal (Str x) = "\"" ++ x ++ "\""
   showVal (Bool True) = "#t"
   showVal (Bool False) = "#f"
-  showVal (Fun _ ) = "internal function"
 
 export
 Show LispVal where
