@@ -41,13 +41,6 @@ numBoolBinop op (Number x) y          = raise $ TypeMismatch "bool" y
 numBoolBinop op x          _          = raise $ TypeMismatch "bool" x
 
 
-getVar : LispVal -> Eval LispVal
-getVar n@(Atom atom) = case lookup atom !get of
-                            Nothing => raise $ UnboundVar "unbound variable" n
-                            Just val => pure $ val
-getVar _             = raise $ LispErr "variables can only be assigned to atoms"
-
-
 -- todo: more ops
 export
 primEnv : Prim
@@ -109,6 +102,12 @@ mutual
   defineVar (Atom atom) exp = setLocal atom exp !get
   defineVar _  exp = raise $ LispErr "can only bind to Atom type valaues"
 
+  getVar : LispVal -> Eval LispVal
+  getVar n@(Atom atom) = case lookup atom !get of
+                              Nothing => raise $ UnboundVar "unbound variable" n
+                              Just val => pure val
+  getVar _             = raise $ LispErr "variables can only be assigned to atoms"
+
 
 uncurryDef : (LispVal, LispVal) -> Eval LispVal
 uncurryDef = uncurry defineVar
@@ -144,21 +143,14 @@ runApp code action =
     pure (!get, v)
 
 
+-- fix me
 export
 evalExpr : EnvCtx -> String -> IO EnvCtx
 evalExpr env expr =
   do
-    case the (Either LispError LispVal) $ runInit (env :: () :: []) (textToEval expr) of
+    case the (Either LispError LispVal) $ runInit (env :: () :: []) $ textToEval expr of
       Left err => do putStrLn $ show err
                      pure $ env
-      Right val => do (e, v) <- run $ runApp env $ pure val
+      Right val => do (e, v) <- run $ runApp env $ textToEval expr
                       putStrLn $ show v
                       pure $ e
-  -- do
-  --   case the (Either LispError (EnvCtx, LispVal)) $ run $ runApp env $ textToEval expr of
-  --        Left e => putStrLn $ show e
-  --        Right v => pure ?returnSth
-  -- do
-  --   (e, v) <- run $ runApp env $ textToEval expr
-  --   putStrLn $ show v
-  --   pure $ e
