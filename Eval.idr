@@ -12,6 +12,7 @@ import Parser
 import LispVal
 import Utils
 
+export
 Prim : Type
 Prim = List (String, LispVal)
 
@@ -48,6 +49,7 @@ getVar _             = raise $ LispErr "variables can only be assigned to atoms"
 
 
 -- todo: more ops
+export
 primEnv : Prim
 primEnv = [ ("+", Fun $ MkFun $ binop $ numOp (+))
             , ("-", Fun $ MkFun $ binop $ numOp (-))
@@ -127,7 +129,6 @@ testEnv : EnvCtx
 testEnv = ("x", Number 42) :: primEnv
 
 
-export
 textToEval : String -> Eval LispVal
 textToEval input =
   case runParse_ input of
@@ -135,28 +136,17 @@ textToEval input =
        Left err  => raise $ err
 
 
-runAppInit : EnvCtx -> Eval b -> Eff (EnvCtx, b) [STATE EnvCtx, STDIO, EXCEPTION LispError]
-runAppInit code action =
- do
-   put code
-   pure (!get, !action)
-
-
-runApp : EnvCtx -> Eval b -> Eff b [STATE EnvCtx, STDIO, EXCEPTION LispError]
+runApp : EnvCtx -> Eval b -> Eff (EnvCtx, b) [STATE EnvCtx, STDIO, EXCEPTION LispError]
 runApp code action =
   do
     put code
-    pure !action
-
+    v <- action
+    pure (!get, v)
 
 export
-evaluate : EnvCtx -> String -> IO ()
-evaluate env expr =
+evalExpr : EnvCtx -> String -> IO EnvCtx
+evalExpr env expr =
   do
-    out <- run $ runApp env $ textToEval expr
-    putStrLn $ show out
-
-
-export
-evalExpr : String -> IO ()
-evalExpr = evaluate testEnv
+    (e, v) <- run $ runApp env $ textToEval expr
+    putStrLn $ show v
+    pure $ e
