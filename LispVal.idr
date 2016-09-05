@@ -35,7 +35,6 @@ mutual
   record Func where
     constructor MkFunc
     args : L.List LispVal
-    vararg : (Maybe String)
     body : L.List LispVal
     env : EnvCtx
 
@@ -46,7 +45,7 @@ mutual
                | Number Integer
                | Str String
                | Fun IFunc
-               | Lambda Func EnvCtx
+               | Lambda Func
                | Bool B.Bool
 
 mutual
@@ -67,6 +66,7 @@ mutual
   showVal (Str x) = "\"" ++ x ++ "\""
   showVal (Bool True) = "#t"
   showVal (Bool False) = "#f"
+  showVal (Lambda (MkFunc args body env)) = "(lambda (" ++ unwordsList args ++ "))"
 
 export
 Show LispVal where

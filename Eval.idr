@@ -80,12 +80,18 @@ mutual
                                                     _  => eval conseq
   eval (List [Atom "def", (Atom val), exp]) = defineVar (Atom val) exp
   eval (List [Atom "define", (Atom val), exp]) = defineVar (Atom val) exp
+  eval (List [Atom "define", List (Atom v :: params), List body]) = defineVar (Atom v) $ Lambda $ MkFunc params body !get
+  -- eval (List [Atom "lambda", List params]) = raise $ Default "wtf"
+  eval (List (function :: args)) = do
+                                     func <- eval function
+                                     argVals <- evalBody args
+                                     apply func argVals
   eval (List [fn, a, b]) = do
                              func <- getVar fn
                              case func of
                                   (Fun (MkFun f)) => f [!(eval a), !(eval b)]
                                   _ => raise $ NotFunction "Unrecognized primitive function" $ show func
-
+  eval somethingElse = raise $ Default $ "unmatched case " ++ show somethingElse
 
   setLocal : String -> LispVal -> EnvCtx -> Eval LispVal
   setLocal atom exp env = do update (addToEnv atom exp)
@@ -108,16 +114,32 @@ mutual
                               Just val => pure val
   getVar _             = raise $ LispErr "variables can only be assigned to atoms"
 
+  -- traverse
+  evalBody : L.List LispVal -> Eff (List LispVal) [STATE EnvCtx, EXCEPTION LispError]
+  evalBody [x]       = pure [x]
+  evalBody (x :: xs) = do x' <- eval x
+                          pure $ x' :: !(evalBody xs)
+  evalBody []        = raise $ Default "empty body"
 
-uncurryDef : (LispVal, LispVal) -> Eval LispVal
-uncurryDef = uncurry defineVar
+
+  apply : LispVal -> L.List LispVal -> Eval LispVal
+  apply (Lambda (MkFunc params body closure)) args =
+   do bindVars $ zip params args
+      ls <- evalBody body
+      case last' ls of
+           Nothing => raise $ Default "empty body"
+           Just v  => pure v
 
 
-bindVars : L.List (LispVal, LispVal) -> Eval ()
-bindVars [] = pure ()
-bindVars (x :: xs) =
-  do uncurryDef x
-     bindVars xs
+  uncurryDef : (LispVal, LispVal) -> Eval LispVal
+  uncurryDef = uncurry defineVar
+
+
+  bindVars : L.List (LispVal, LispVal) -> Eval ()
+  bindVars [] = pure ()
+  bindVars (x :: xs) =
+    do uncurryDef x
+       bindVars xs
 
 
 runParse_ : String -> Either LispError LispVal
