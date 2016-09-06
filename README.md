@@ -1,5 +1,6 @@
-# [Idris](http://www.idris-lang.org/) playground
-Dependent Types
+## type-driven development
+
+### [Idris](http://www.idris-lang.org/)
 
 ### resources:
 
@@ -19,3 +20,10 @@ cabal sandbox init
 cabal install idris
 .cabal-sandbox\bin\idris
 ```
+
+### [agda](http://wiki.portal.chalmers.se/agda/pmwiki.php)
+
+### resources:
+
+* [A series of lectures given by Conor McBride](https://www.youtube.com/playlist?list=PL44F162A8B8CB7C87)
+* [Learn you an Agda](http://learnyouanagda.liamoc.net/pages/introduction.html)
