@@ -2,3 +2,13 @@
 *.o
 .DS_Store
 console/parser
+
+# Ignore Agda compiled files
+*.agdai
+.*.agda.vim
+# Ignore Emacs backup files
+*~
+html/
+Unclassified/
+Test.agda
+MAlonzo/
