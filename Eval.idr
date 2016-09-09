@@ -80,12 +80,7 @@ mutual
                                                     _  => eval conseq
   eval (List [Atom "def", (Atom val), exp]) = defineVar (Atom val) exp
   eval (List [Atom "define", (Atom val), exp]) = defineVar (Atom val) exp
-  eval (List [Atom "define", List (Atom v :: params), List body]) = defineVar (Atom v) $ Lambda $ MkFunc params body !get
-  -- eval (List [Atom "lambda", List params]) = raise $ Default "wtf"
-  eval (List (function :: args)) = do
-                                     func <- eval function
-                                     argVals <- evalBody args
-                                     apply func argVals
+  eval (List [Atom "", (Atom val), exp]) = defineVar (Atom val) exp
   eval (List [fn, a, b]) = do
                              func <- getVar fn
                              case func of
@@ -115,20 +110,11 @@ mutual
   getVar _             = raise $ LispErr "variables can only be assigned to atoms"
 
   -- traverse
-  evalBody : L.List LispVal -> Eff (List LispVal) [STATE EnvCtx, EXCEPTION LispError]
-  evalBody [x]       = pure [x]
-  evalBody (x :: xs) = do x' <- eval x
-                          pure $ x' :: !(evalBody xs)
-  evalBody []        = raise $ Default "empty body"
-
-
-  apply : LispVal -> L.List LispVal -> Eval LispVal
-  apply (Lambda (MkFunc params body closure)) args =
-   do bindVars $ zip params args
-      ls <- evalBody body
-      case last' ls of
-           Nothing => raise $ Default "empty body"
-           Just v  => pure v
+  traverse' : L.List LispVal -> Eff (List LispVal) [STATE EnvCtx, EXCEPTION LispError]
+  traverse' [x]       = pure [x]
+  traverse' (x :: xs) = do x' <- eval x
+                           pure $ x' :: !(traverse' xs)
+  traverse' []        = raise $ Default "empty body"
 
 
   uncurryDef : (LispVal, LispVal) -> Eval LispVal
