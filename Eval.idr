@@ -131,6 +131,18 @@ mutual
            _      => raise $ Default "error evaluating into list"
 
 
+  cons : L.List LispVal -> Eval LispVal
+  cons [x, y@(List _)] =
+    do
+      v <- eval x
+      v' <- evalToList y
+      pure $ List $ v :: v'
+  cons [c] =
+    do
+      _ <- eval c
+      pure $ List [c]
+  cons []  = pure $ List []
+
   -- traverse
   traverse' : L.List LispVal -> Eff (List LispVal) [STATE EnvCtx, EXCEPTION LispError]
   traverse' [x]       = pure [x]
