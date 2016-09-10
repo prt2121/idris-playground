@@ -73,6 +73,8 @@ mutual
   eval val@(Number n)  = pure val
   eval val@(Str s)     = pure val
   eval val@(Bool b)    = pure val
+  eval (List Nil)      = pure Nil
+  eval Nil             = pure Nil
   eval val@(Atom atom) = getVar val
   eval (List [Atom "quote", val]) = pure val
   eval (List [Atom "if", pred, conseq, alt]) = case !(eval pred) of
@@ -80,13 +82,21 @@ mutual
                                                     _  => eval conseq
   eval (List [Atom "def", (Atom val), exp]) = defineVar (Atom val) exp
   eval (List [Atom "define", (Atom val), exp]) = defineVar (Atom val) exp
-  eval (List [Atom "", (Atom val), exp]) = defineVar (Atom val) exp
+  eval (List [Atom "lambda", params, exp]) = do p <- evalToList params
+                                                pure $ Lambda (MkFun (\args => (evalArgsExpEnv args p exp))) !get
   eval (List [fn, a, b]) = do
                              func <- getVar fn
                              case func of
                                   (Fun (MkFun f)) => f [!(eval a), !(eval b)]
                                   _ => raise $ NotFunction "Unrecognized primitive function" $ show func
   eval somethingElse = raise $ Default $ "unmatched case " ++ show somethingElse
+
+
+  evalArgsExpEnv : List LispVal -> List LispVal -> LispVal -> Eval LispVal
+  evalArgsExpEnv args params exp =
+    do bindVars $ zipWith MkPair params args
+       eval exp
+
 
   setLocal : String -> LispVal -> EnvCtx -> Eval LispVal
   setLocal atom exp env = do update (addToEnv atom exp)
@@ -99,15 +109,27 @@ mutual
                                      Nothing => raise $ UnboundVar "unbound variable" n
   setVar _  exp = raise $ LispErr "variables can only be assigned to atoms"
 
+
   defineVar : LispVal -> LispVal -> Eval LispVal
   defineVar (Atom atom) exp = setLocal atom exp !get
   defineVar _  exp = raise $ LispErr "can only bind to Atom type valaues"
+
 
   getVar : LispVal -> Eval LispVal
   getVar n@(Atom atom) = case lookup atom !get of
                               Nothing => raise $ UnboundVar "unbound variable" n
                               Just val => pure val
   getVar _             = raise $ LispErr "variables can only be assigned to atoms"
+
+
+  evalToList : LispVal -> Eval (L.List LispVal)
+  evalToList expr =
+    do
+      val <- eval expr
+      case val of
+           List x => pure x
+           _      => raise $ Default "error evaluating into list"
+
 
   -- traverse
   traverse' : L.List LispVal -> Eff (List LispVal) [STATE EnvCtx, EXCEPTION LispError]
@@ -127,6 +149,8 @@ mutual
     do uncurryDef x
        bindVars xs
 
+
+-- end mutual
 
 runParse_ : String -> Either LispError LispVal
 runParse_ = mapLeft (\_ => Default "parser error") . readExpr

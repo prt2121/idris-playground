@@ -39,6 +39,7 @@ mutual
                | Str String
                | Fun IFunc
                | Lambda IFunc EnvCtx
+               | Nil
                | Bool B.Bool
 
 mutual
