@@ -68,6 +68,7 @@ mutate atom exp (a, b) = if a == atom
 addToEnv : String -> LispVal -> EnvCtx -> EnvCtx
 addToEnv n v ls = (n, v) :: ls
 
+
 mutual
   eval : LispVal -> Eval LispVal
   eval val@(Number n)  = pure val
@@ -84,11 +85,14 @@ mutual
   eval (List [Atom "define", (Atom val), exp]) = defineVar (Atom val) exp
   eval (List [Atom "lambda", params, exp]) = do p <- evalToList params
                                                 pure $ Lambda (MkFun (\args => (evalArgsExpEnv args p exp))) !get
-  eval (List [fn, a, b]) = do
-                             func <- getVar fn
-                             case func of
-                                  (Fun (MkFun f)) => f [!(eval a), !(eval b)]
-                                  _ => raise $ NotFunction "Unrecognized primitive function" $ show func
+  eval (List [(Atom fn), a, b]) =
+    do
+      func <- getVar $ Atom fn
+      case func of
+           (Fun (MkFun f)) => f [!(eval a), !(eval b)]
+           (Lambda (MkFun f) boundEnv) => do put boundEnv
+                                             f [!(eval a), !(eval b)]
+           _ => raise $ NotFunction "Unrecognized primitive function" $ show func
   eval somethingElse = raise $ Default $ "unmatched case " ++ show somethingElse
 
 
