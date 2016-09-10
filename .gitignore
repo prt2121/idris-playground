@@ -12,3 +12,8 @@ html/
 Unclassified/
 Test.agda
 MAlonzo/
+
+# executable
+scheme
+repl
+parser
