@@ -2,6 +2,22 @@ module equality
 
 import Data.Vect
 
+-- 8.1.7 Exercises
+same_cons : {xs : List a}
+            -> {ys : List a}
+            -> xs = ys
+            -> x :: xs = x :: ys
+same_cons Refl = Refl
+
+
+same_lists : {xs : List a}
+             -> {ys : List a}
+             -> x = y
+             -> xs = ys
+             -> x :: xs = y :: ys
+same_lists Refl Refl = Refl
+
+
 data EqNat : (num1 : Nat) -> (num2 : Nat) -> Type where
      Same : (num : Nat) -> EqNat num num
 
