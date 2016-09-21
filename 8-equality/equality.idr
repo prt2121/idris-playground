@@ -48,3 +48,12 @@ exactLength : (len : Nat) -> (input : Vect m a) -> Maybe (Vect len a)
 exactLength {m} len input = case checkEqNat m len of
                                  Just (Same len) => Just input
                                  Nothing => Nothing
+
+
+reverseProof : Vect (k + 1) elem -> Vect (S k) elem
+reverseProof {k} ys = rewrite plusCommutative 1 k in ys
+
+
+my_reverse : Vect n elem -> Vect n elem
+my_reverse [] = []
+my_reverse (x :: xs) = reverseProof (my_reverse xs ++ [x])
