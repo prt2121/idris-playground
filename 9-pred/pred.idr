@@ -6,7 +6,7 @@ import Data.Vect
 maryInVector : Elem "Prat" ["Peter", "Paul", "Prat"]
 maryInVector = There $ There Here
 
-
+export
 removeElem : (value : a) ->
              (xs : Vect (S n) a) ->
              (prf : Elem value xs) ->
